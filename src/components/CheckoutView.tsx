@@ -18,9 +18,12 @@ import {
 
 interface CheckoutViewProps {
   onNavigate: (view: any) => void;
+  cart: any[];
+  updateQuantity: (id: number, quantity: number) => void;
+  removeFromCart: (id: number) => void;
 }
 
-export default function CheckoutView({ onNavigate }: CheckoutViewProps) {
+export default function CheckoutView({ onNavigate, cart, updateQuantity, removeFromCart }: CheckoutViewProps) {
   const [step, setStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'yape' | 'mercado'>('card');
   
@@ -79,31 +82,7 @@ export default function CheckoutView({ onNavigate }: CheckoutViewProps) {
     }
   };
 
-  const cartItems = [
-    {
-      id: 1,
-      name: 'NVIDIA RTX 4080 Founder\'s Edition',
-      image: 'https://images.unsplash.com/photo-1591489378430-ef2f4c626b35?auto=format&fit=crop&q=80&w=100&h=100',
-      quantity: 1,
-      price: 4299.00
-    },
-    {
-      id: 2,
-      name: 'Corsair Vengeance 32GB DDR5 6000MHz',
-      image: 'https://images.unsplash.com/photo-1541029071515-84cc54f84dc5?auto=format&fit=crop&q=80&w=100&h=100',
-      quantity: 2,
-      price: 480.00
-    },
-    {
-      id: 3,
-      name: 'Samsung 980 Pro 1TB NVMe Gen4',
-      image: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&q=80&w=100&h=100',
-      quantity: 1,
-      price: 50.00
-    }
-  ];
-
-  const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const shipping = 0;
   const total = subtotal + shipping;
 
@@ -218,11 +197,11 @@ export default function CheckoutView({ onNavigate }: CheckoutViewProps) {
                   <select 
                     value={formData.district}
                     onChange={(e) => handleInputChange('district', e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none"
+                    className="w-full bg-[#1a1f26] border border-white/10 rounded-2xl px-4 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none"
                   >
-                    <option className="bg-slate-900">Lima</option>
-                    <option className="bg-slate-900">Arequipa</option>
-                    <option className="bg-slate-900">Trujillo</option>
+                    <option value="Lima" className="bg-[#151921] text-white">Lima</option>
+                    <option value="Arequipa" className="bg-[#151921] text-white">Arequipa</option>
+                    <option value="Trujillo" className="bg-[#151921] text-white">Trujillo</option>
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -390,23 +369,57 @@ export default function CheckoutView({ onNavigate }: CheckoutViewProps) {
             <h3 className="text-xl font-black text-white uppercase tracking-tight">Resumen de Compra</h3>
             
             <div className="space-y-6 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-              {cartItems.map((item) => (
-                <div key={item.id} className="flex gap-4 group">
-                  <div className="w-20 h-20 rounded-2xl bg-black/40 overflow-hidden shrink-0">
-                    <img 
-                      src={item.image} 
-                      alt={item.name} 
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                      referrerPolicy="no-referrer"
-                    />
+              {cart.length > 0 ? (
+                cart.map((item) => (
+                  <div key={item.id} className="flex gap-4 group">
+                    <div className="w-20 h-20 rounded-2xl bg-black/40 overflow-hidden shrink-0">
+                      <img 
+                        src={item.image} 
+                        alt={item.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <h4 className="text-xs font-bold text-white leading-snug line-clamp-2">{item.name}</h4>
+                      <div className="flex items-center gap-3 mt-1">
+                        <div className="flex items-center bg-slate-900 rounded-lg border border-white/5">
+                          <button 
+                            onClick={() => updateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                            className="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+                          >
+                            -
+                          </button>
+                          <span className="text-[10px] font-black text-white w-6 text-center">{item.quantity}</span>
+                          <button 
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="w-6 h-6 flex items-center justify-center text-slate-500 hover:text-white transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <button 
+                          onClick={() => removeFromCart(item.id)}
+                          className="text-[8px] font-black text-rose-500 uppercase tracking-widest hover:underline"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                      <p className="text-sm font-black text-primary">S/ {(item.price * item.quantity).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                    </div>
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <h4 className="text-xs font-bold text-white leading-snug line-clamp-2">{item.name}</h4>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase">Cantidad: {item.quantity}</p>
-                    <p className="text-sm font-black text-primary">S/ {item.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-slate-500 text-sm font-bold">Tu carrito está vacío</p>
+                  <button 
+                    onClick={() => onNavigate('catalog')}
+                    className="text-primary text-xs font-black uppercase tracking-widest mt-2 hover:underline"
+                  >
+                    Ir al catálogo
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
 
             <div className="pt-8 border-t border-white/5 space-y-6">

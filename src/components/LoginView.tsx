@@ -9,6 +9,7 @@ interface LoginViewProps {
 
 export default function LoginView({ onNavigate, onLogin }: LoginViewProps) {
   const [email, setEmail] = React.useState('');
+  const [showPassword, setShowPassword] = React.useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +28,7 @@ export default function LoginView({ onNavigate, onLogin }: LoginViewProps) {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md relative z-10"
       >
-        <div className="bg-slate-900/60 backdrop-blur-md border border-white/10 rounded-2xl p-8 md:p-10 shadow-2xl">
+        <div className="bg-slate-900/60 backdrop-blur-sm border border-white/10 rounded-2xl p-8 md:p-10 shadow-2xl">
           <div className="flex flex-col items-center mb-8">
             <div className="bg-primary p-3 rounded-xl mb-4 shadow-lg shadow-primary/30">
               <Memory className="text-white w-8 h-8" />
@@ -63,10 +64,14 @@ export default function LoginView({ onNavigate, onLogin }: LoginViewProps) {
                   className="bg-transparent border-none focus:ring-0 text-white w-full placeholder:text-slate-600 ml-3 text-sm outline-none" 
                   placeholder="••••••••" 
                   required 
-                  type="password" 
+                  type={showPassword ? "text" : "password"} 
                 />
-                <button className="text-slate-500 hover:text-slate-300" type="button">
-                  <Eye className="w-5 h-5" />
+                <button 
+                  className="text-slate-500 hover:text-slate-300 transition-colors" 
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <Eye className="w-5 h-5 text-primary" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>

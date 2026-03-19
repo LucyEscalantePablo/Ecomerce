@@ -35,6 +35,7 @@ interface PCBuilderProps {
   onNavigate: (view: 'home' | 'catalog' | 'login' | 'register' | 'pc-builder') => void;
   initialStep?: number;
   onProductClick?: (product: any) => void;
+  onAddToCart?: (product: any) => void;
 }
 
 const steps = [
@@ -115,13 +116,19 @@ const filterDefinitions: Record<string, any[]> = {
   ],
 };
 
-export default function PCBuilder({ onNavigate, initialStep, onProductClick }: PCBuilderProps) {
+export default function PCBuilder({ onNavigate, initialStep, onProductClick, onAddToCart }: PCBuilderProps) {
   const [currentStep, setCurrentStep] = useState(initialStep ?? 0);
   const [selections, setSelections] = useState<Record<string, any>>({});
   const [isFinished, setIsFinished] = useState(false);
   const [activeFilters, setActiveFilters] = useState<Record<string, any>>({});
-  const [priceRange, setPriceRange] = useState([800, 8500]);
+  const [priceRange, setPriceRange] = useState([0, 10000]);
   const [showFilters, setShowFilters] = useState(true);
+
+  useEffect(() => {
+    // Reset filters when step changes to avoid filtering out products with different properties
+    setActiveFilters({});
+    setPriceRange([0, 10000]);
+  }, [currentStep]);
 
   useEffect(() => {
     if (initialStep !== undefined && initialStep >= 0 && initialStep < steps.length) {
@@ -155,14 +162,26 @@ export default function PCBuilder({ onNavigate, initialStep, onProductClick }: P
 
   const clearFilters = () => {
     setActiveFilters({});
-    setPriceRange([800, 8500]);
+    setPriceRange([0, 10000]);
   };
 
   const handleSelectProduct = (product: any) => {
+    const isDeselecting = selections[currentStepId]?.id === product.id;
     setSelections(prev => ({
       ...prev,
-      [currentStepId]: prev[currentStepId]?.id === product.id ? null : product
+      [currentStepId]: isDeselecting ? null : product
     }));
+
+    // If selecting (not deselecting), move to next step automatically after a short delay
+    if (!isDeselecting) {
+      setTimeout(() => {
+        if (currentStep < steps.length - 1) {
+          setCurrentStep(prev => prev + 1);
+        } else {
+          setIsFinished(true);
+        }
+      }, 800);
+    }
   };
 
   const canAdvance = !!selectedProduct;
@@ -184,6 +203,14 @@ export default function PCBuilder({ onNavigate, initialStep, onProductClick }: P
     } else if (index === currentStep + 1 && canAdvance) {
       setCurrentStep(index);
     }
+  };
+
+  const handleAddAllToCart = () => {
+    Object.values(selections).forEach(product => {
+      if (product) {
+        onAddToCart?.(product);
+      }
+    });
   };
 
   const totalAmount = Object.values(selections).reduce((acc, item: any) => acc + (item?.price || 0), 0);
@@ -295,7 +322,10 @@ export default function PCBuilder({ onNavigate, initialStep, onProductClick }: P
                 </div>
 
                 <div className="space-y-3">
-                  <button className="w-full py-5 bg-primary hover:bg-primary/90 text-white rounded-2xl font-black flex items-center justify-center gap-3 transition-all shadow-xl shadow-primary/30 group">
+                  <button 
+                    onClick={handleAddAllToCart}
+                    className="w-full py-5 bg-primary hover:bg-primary/90 text-white rounded-2xl font-black flex items-center justify-center gap-3 transition-all shadow-xl shadow-primary/30 group"
+                  >
                     <ShoppingCart className="w-6 h-6 group-hover:scale-110 transition-transform" />
                     Agregar todo al carrito
                   </button>
@@ -445,9 +475,9 @@ export default function PCBuilder({ onNavigate, initialStep, onProductClick }: P
 
                       {filter.type === 'select' && (
                         <div className="relative">
-                          <select className="w-full bg-slate-900/40 border border-white/5 rounded-xl px-4 py-2.5 text-[10px] font-bold appearance-none pr-10 focus:ring-1 focus:ring-primary/40 outline-none cursor-pointer text-slate-400">
+                          <select className="w-full bg-[#1a1f26] border border-white/10 rounded-xl px-4 py-2.5 text-[10px] font-bold appearance-none pr-10 focus:ring-1 focus:ring-primary/40 outline-none cursor-pointer text-white">
                             {filter.options.map((opt: string) => (
-                              <option key={opt}>{opt}</option>
+                              <option key={opt} value={opt} className="bg-[#151921] text-white">{opt}</option>
                             ))}
                           </select>
                           <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
@@ -468,8 +498,8 @@ export default function PCBuilder({ onNavigate, initialStep, onProductClick }: P
                       <div className="relative h-6 flex items-center">
                         <input 
                           type="range" 
-                          min="800" 
-                          max="8500" 
+                          min="0" 
+                          max="10000" 
                           step="50"
                           value={priceRange[0]}
                           onChange={(e) => {
@@ -482,8 +512,8 @@ export default function PCBuilder({ onNavigate, initialStep, onProductClick }: P
                         />
                         <input 
                           type="range" 
-                          min="800" 
-                          max="8500" 
+                          min="0" 
+                          max="10000" 
                           step="50"
                           value={priceRange[1]}
                           onChange={(e) => {
@@ -538,9 +568,9 @@ export default function PCBuilder({ onNavigate, initialStep, onProductClick }: P
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ordenar por:</span>
                 <div className="relative">
                   <select className="bg-transparent text-xs font-bold appearance-none pr-8 focus:outline-none cursor-pointer text-white">
-                    <option>Relevancia</option>
-                    <option>Precio: Menor a Mayor</option>
-                    <option>Precio: Mayor a Menor</option>
+                    <option className="bg-[#151921] text-white">Relevancia</option>
+                    <option className="bg-[#151921] text-white">Precio: Menor a Mayor</option>
+                    <option className="bg-[#151921] text-white">Precio: Mayor a Menor</option>
                   </select>
                   <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                 </div>
@@ -549,9 +579,9 @@ export default function PCBuilder({ onNavigate, initialStep, onProductClick }: P
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Mostrar:</span>
                 <div className="relative">
                   <select className="bg-transparent text-xs font-bold appearance-none pr-8 focus:outline-none cursor-pointer text-white">
-                    <option>24 por página</option>
-                    <option>48 por página</option>
-                    <option>96 por página</option>
+                    <option className="bg-[#151921] text-white">24 por página</option>
+                    <option className="bg-[#151921] text-white">48 por página</option>
+                    <option className="bg-[#151921] text-white">96 por página</option>
                   </select>
                   <ChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
                 </div>
@@ -570,116 +600,144 @@ export default function PCBuilder({ onNavigate, initialStep, onProductClick }: P
 
           {/* Product Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {currentProducts.map((product) => (
-              <motion.div
-                key={product.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`relative bg-[#151921] rounded-3xl border transition-all group cursor-pointer overflow-hidden flex flex-col ${
-                  selectedProduct?.id === product.id 
-                    ? 'border-primary ring-1 ring-primary/50 shadow-2xl shadow-primary/10' 
-                    : 'border-white/5 hover:border-white/20'
-                }`}
-                onClick={() => onProductClick?.(product)}
-              >
-                {/* Badges & Actions */}
-                <div className="absolute top-4 left-4 right-4 z-10 flex items-start justify-between">
-                  <div className="flex flex-col gap-1.5">
-                    {product.badge && (
-                      <span className="bg-primary text-white text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest shadow-lg shadow-primary/20">
-                        {product.badge}
-                      </span>
-                    )}
-                    {product.stock && (
-                      <span className={`text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest ${
-                        product.stock === 'EN STOCK' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-slate-800 text-slate-500'
-                      }`}>
-                        {product.stock}
-                      </span>
-                    )}
+            {currentProducts.length > 0 ? (
+              currentProducts.map((product) => (
+                <motion.div
+                  key={product.id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`relative bg-[#151921] rounded-3xl border transition-all group cursor-pointer overflow-hidden flex flex-col ${
+                    selectedProduct?.id === product.id 
+                      ? 'border-primary ring-1 ring-primary/50 shadow-2xl shadow-primary/10' 
+                      : 'border-white/5 hover:border-white/20'
+                  }`}
+                  onClick={() => handleSelectProduct(product)}
+                >
+                  {/* Badges & Actions */}
+                  <div className="absolute top-4 left-4 right-4 z-10 flex items-start justify-between">
+                    <div className="flex flex-col gap-1.5">
+                      {product.badge && (
+                        <span className="bg-primary text-white text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest shadow-lg shadow-primary/20">
+                          {product.badge}
+                        </span>
+                      )}
+                      {product.stock && (
+                        <span className={`text-[8px] font-black px-2 py-1 rounded uppercase tracking-widest ${
+                          product.stock === 'EN STOCK' ? 'bg-emerald-500/20 text-emerald-500' : 'bg-slate-800 text-slate-500'
+                        }`}>
+                          {product.stock}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAddToCart?.(product);
+                        }}
+                        className="w-8 h-8 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center text-white/40 hover:text-emerald-500 transition-colors"
+                        title="Añadir al carrito"
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onProductClick?.(product);
+                        }}
+                        className="w-8 h-8 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center text-white/40 hover:text-primary transition-colors"
+                        title="Ver detalles"
+                      >
+                        <Info className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-8 h-8 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center text-white/40 hover:text-rose-500 transition-colors"
+                      >
+                        <Heart className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                  <button 
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-8 h-8 bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center text-white/40 hover:text-rose-500 transition-colors"
-                  >
-                    <Heart className="w-4 h-4" />
-                  </button>
-                </div>
-                
-                <div className="relative aspect-square bg-[#0B0E14] overflow-hidden flex items-center justify-center">
-                  <img 
-                    src={product.image} 
-                    alt={product.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    referrerPolicy="no-referrer"
-                  />
-                  {selectedProduct?.id === product.id && (
-                    <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[2px]">
-                      <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-2xl shadow-primary/40">
-                        <Check className="w-7 h-7 text-white" />
+                  
+                  <div className="relative aspect-square bg-[#0B0E14] overflow-hidden flex items-center justify-center">
+                    <img 
+                      src={product.image} 
+                      alt={product.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      referrerPolicy="no-referrer"
+                    />
+                    {selectedProduct?.id === product.id && (
+                      <div className="absolute inset-0 bg-primary/20 flex items-center justify-center backdrop-blur-[2px]">
+                        <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-2xl shadow-primary/40">
+                          <Check className="w-7 h-7 text-white" />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {product.stock === 'AGOTADO' && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
-                      <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] border border-white/20 px-4 py-2 rounded-lg">AGOTADO</span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-5 space-y-4 flex-1 flex flex-col">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-medium text-slate-500 uppercase tracking-tight">{product.brand || 'Premium'}</p>
-                    <h3 className="font-bold text-white text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2">{product.name}</h3>
+                    )}
+                    {product.stock === 'AGOTADO' && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                        <span className="text-[10px] font-black text-white uppercase tracking-[0.2em] border border-white/20 px-4 py-2 rounded-lg">AGOTADO</span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5">
-                    {product.tags.slice(0, 2).map(tag => (
-                      <span key={tag} className="px-2 py-1 bg-slate-800/50 rounded text-[8px] font-bold text-slate-400 uppercase">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="flex items-end justify-between pt-2">
+                  <div className="p-5 space-y-4 flex-1 flex flex-col">
                     <div className="space-y-1">
-                      {product.oldPrice && <p className="text-[10px] text-slate-500 line-through">S/ {product.oldPrice}</p>}
-                      <p className="text-blue-500 font-black text-xl tracking-tighter">S/ {new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(product.price)}</p>
+                      <p className="text-[10px] font-medium text-slate-500 uppercase tracking-tight">{product.brand || 'Premium'}</p>
+                      <h3 className="font-bold text-white text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2">{product.name}</h3>
                     </div>
-                    <button 
-                      disabled={product.stock === 'AGOTADO'}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectProduct(product);
-                      }}
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
-                        selectedProduct?.id === product.id
-                          ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                          : 'text-slate-500 hover:text-white hover:bg-white/5'
-                      } ${product.stock === 'AGOTADO' ? 'opacity-20 cursor-not-allowed' : ''}`}
-                    >
-                      {selectedProduct?.id === product.id ? <Check className="w-5 h-5" /> : <ShoppingCart className="w-6 h-6 stroke-[1.5]" />}
-                    </button>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {product.tags.slice(0, 2).map(tag => (
+                        <span key={tag} className="px-2 py-1 bg-slate-800/50 rounded text-[8px] font-bold text-slate-400 uppercase">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="flex items-end justify-between pt-2">
+                      <div className="space-y-1">
+                        {product.oldPrice && <p className="text-[10px] text-slate-500 line-through">S/ {product.oldPrice}</p>}
+                        <p className="text-blue-500 font-black text-xl tracking-tighter">S/ {new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(product.price)}</p>
+                      </div>
+                      <button 
+                        disabled={product.stock === 'AGOTADO'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSelectProduct(product);
+                        }}
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                          selectedProduct?.id === product.id
+                            ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                            : 'text-slate-500 hover:text-white hover:bg-white/5'
+                        } ${product.stock === 'AGOTADO' ? 'opacity-20 cursor-not-allowed' : ''}`}
+                      >
+                        {selectedProduct?.id === product.id ? <Check className="w-5 h-5" /> : <ShoppingCart className="w-6 h-6 stroke-[1.5]" />}
+                      </button>
+                    </div>
                   </div>
+                </motion.div>
+              ))
+            ) : (
+              <div className="col-span-full py-20 flex flex-col items-center justify-center text-center space-y-4 bg-[#151921]/30 rounded-3xl border border-dashed border-white/10">
+                <div className="w-16 h-16 bg-slate-800/50 rounded-2xl flex items-center justify-center text-slate-500">
+                  <Search className="w-8 h-8" />
                 </div>
-              </motion.div>
-            ))}
+                <div>
+                  <h3 className="text-lg font-bold text-white">No se encontraron productos</h3>
+                  <p className="text-slate-500 text-sm max-w-xs mx-auto">Intenta ajustar los filtros o el rango de precio para ver más opciones.</p>
+                </div>
+                <button 
+                  onClick={clearFilters}
+                  className="px-6 py-2 bg-primary/10 text-primary rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/20 transition-all"
+                >
+                  Limpiar Filtros
+                </button>
+              </div>
+            )}
 
             {/* "Ver más modelos" Card */}
-            <div className="bg-[#151921]/40 rounded-2xl p-5 border border-dashed border-white/10 flex flex-col items-center justify-center text-center space-y-4 group cursor-pointer hover:bg-[#151921]/60 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-slate-800/50 flex items-center justify-center text-slate-500 group-hover:text-primary transition-colors">
-                <LayoutGrid className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="font-bold text-white text-sm mb-1">Ver más modelos</h4>
-                <p className="text-slate-500 text-[10px]">Explora más opciones compatibles.</p>
-              </div>
-              <button className="text-primary text-[10px] font-black uppercase tracking-widest hover:underline">
-                VER CATÁLOGO
-              </button>
             </div>
-          </div>
 
           {/* Pagination */}
           <div className="flex items-center justify-center gap-2 pt-12">

@@ -18,9 +18,10 @@ interface ProductDetailProps {
   onBack: () => void;
   onToggleWishlist: (id: number) => void;
   isWishlisted: boolean;
+  onAddToCart?: (product: any) => void;
 }
 
-const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onToggleWishlist, isWishlisted }) => {
+const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onToggleWishlist, isWishlisted, onAddToCart }) => {
   const [activeImage, setActiveImage] = useState(product.image);
 
   // Mocking some data if missing
@@ -135,7 +136,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onToggle
           </p>
 
           <div className="flex gap-4">
-            <button className="flex-1 bg-primary hover:bg-primary/80 text-white h-16 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-xl shadow-primary/20">
+            <button 
+              onClick={() => onAddToCart?.(product)}
+              className="flex-1 bg-primary hover:bg-primary/80 text-white h-16 rounded-2xl font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-xl shadow-primary/20"
+            >
               <ShoppingCart className="w-6 h-6" />
               Añadir al carrito
             </button>

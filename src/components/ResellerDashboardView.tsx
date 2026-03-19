@@ -143,9 +143,9 @@ export default function ResellerDashboardView({ onNavigate, approvedCategories, 
         <div className="lg:col-span-2 bg-[#151921] border border-white/5 rounded-3xl p-8 space-y-8">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-black text-white uppercase tracking-tight">Rendimiento de Ventas</h3>
-            <select className="bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest outline-none">
-              <option>Últimos 7 días</option>
-              <option>Último mes</option>
+            <select className="bg-[#1a1f26] border border-white/10 rounded-xl px-4 py-2 text-[10px] font-black text-white uppercase tracking-widest outline-none">
+              <option className="bg-[#151921] text-white">Últimos 7 días</option>
+              <option className="bg-[#151921] text-white">Último mes</option>
             </select>
           </div>
           <div className="h-[300px]">
@@ -260,12 +260,12 @@ export default function ResellerDashboardView({ onNavigate, approvedCategories, 
             <select 
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest outline-none"
+              className="bg-[#1a1f26] border border-white/10 rounded-xl px-4 py-2 text-[10px] font-black text-white uppercase tracking-widest outline-none"
             >
-              <option>Todas las Categorías</option>
+              <option className="bg-[#151921] text-white">Todas las Categorías</option>
               {approvedCategories.map(cat => {
                 const label = typeof cat === 'string' ? cat : cat.label;
-                return <option key={label} value={label}>{label}</option>;
+                return <option key={label} value={label} className="bg-[#151921] text-white">{label}</option>;
               })}
             </select>
           </div>

@@ -8,17 +8,21 @@ export async function getLisiResponse(message: string, history: { role: "user" |
   }
 
   const genAI = new GoogleGenAI({ apiKey: API_KEY });
-  const model = genAI.models.generateContent({
-    model: "gemini-3.1-pro-preview",
-    contents: [
-      ...history,
-      { role: "user", parts: [{ text: message }] }
-    ],
+  
+  // Ensure history starts with a user message if it's not empty
+  const validHistory = [...history];
+  if (validHistory.length > 0 && validHistory[0].role === 'model') {
+    validHistory.shift();
+  }
+
+  const chat = genAI.chats.create({
+    model: "gemini-3-flash-preview",
+    history: validHistory,
     config: {
       systemInstruction: "Eres Lisi, la asistente virtual de TechMarket Smart. Eres experta en hardware de computadoras, componentes de PC, laptops y periféricos. Tu objetivo es ayudar a los usuarios a encontrar los mejores productos según su presupuesto y necesidades. Eres amable, profesional y técnica pero accesible. Siempre recomiendas productos de TechMarket Smart.",
     }
   });
 
-  const response = await model;
+  const response = await chat.sendMessage({ message });
   return response.text || "Lo siento, tuve un problema al procesar tu solicitud.";
 }

@@ -31,9 +31,40 @@ interface CatalogViewProps {
   isLoggedIn?: boolean;
   isReseller?: boolean;
   resellerCategories?: string[];
+  searchQuery?: string;
+  onClearSearch?: () => void;
+  onAddToCart?: (product: any) => void;
 }
 
 const categories: Record<string, { title: string, desc: string }> = {
+  'COMPONENTES': {
+    title: "Componentes de PC",
+    desc: "Todo lo necesario para armar o repotenciar tu PC: Procesadores, GPUs, Placas Base y más."
+  },
+  'LAPTOPS Y COMPUTADORAS': {
+    title: "Laptops y Computadoras",
+    desc: "Explora nuestra amplia gama de laptops gaming, profesionales y para estudio."
+  },
+  'PERIFÉRICOS': {
+    title: "Periféricos",
+    desc: "Mejora tu interacción con teclados, mouse, headsets y más accesorios de alta calidad."
+  },
+  'MONITORES': {
+    title: "Monitores",
+    desc: "Visualiza cada detalle con monitores de alta resolución y tasas de refresco extremas."
+  },
+  'NETWORKING': {
+    title: "Networking",
+    desc: "Conectividad sin interrupciones con lo último en routers, switches y adaptadores."
+  },
+  'STREAMING': {
+    title: "Streaming",
+    desc: "Todo lo necesario para tus transmisiones en vivo: cámaras, luces y capturadoras."
+  },
+  'ACCESORIOS': {
+    title: "Accesorios",
+    desc: "Cables, adaptadores y protección eléctrica para mantener tu setup funcionando al 100%."
+  },
   gpu: {
     title: "Tarjetas de Video",
     desc: "Impulsa tu rendimiento con las últimas arquitecturas de gráficos. Filtrado inteligente para tu setup ideal."
@@ -213,6 +244,28 @@ const categories: Record<string, { title: string, desc: string }> = {
 };
 
 export const categoryData: Record<string, any[]> = {
+  'COMPONENTES': [
+    { id: 101, name: 'Intel Core i9-14900K', specs: '24 Núcleos / 32 Hilos • 6.0GHz', tags: ['LGA 1700', '125W TDP'], price: 2499.00, image: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&q=80&w=400&h=400&sig=cpu1', badge: 'RECOMENDADO', brand: 'Intel', socket: 'LGA 1700', cores: '24', tdp: 'Medio (100-150W)', stock: 'EN STOCK', subCat: 'Procesadores (CPUs)' },
+    { id: 401, brand: "ASUS ROG Strix", name: "GeForce RTX 4090 OC Edition 24GB GDDR6X", price: 8499, oldPrice: 9200, image: "https://images.unsplash.com/photo-1591489378430-ef2f4c626b35?auto=format&fit=crop&q=80&w=400&h=400&sig=gpu1", badge: "NUEVO", stock: "EN STOCK", tags: ["RTX 40 Series", "24GB VRAM"], vram: '24GB', series: 'RTX 40 Series', tdp: 'Alto (>300W)', subCat: 'Tarjetas de Video (GPUs)' },
+  ],
+  'LAPTOPS Y COMPUTADORAS': [
+    { id: 803, brand: "Apple", name: "MacBook Pro 14 • M3 Max • 36GB RAM", price: 12499.00, image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=800&h=600", badge: "PREMIUM", stock: "EN STOCK", tags: ["M3 Max", "36GB RAM"], subCat: 'Laptops Gaming' },
+  ],
+  'PERIFÉRICOS': [
+    { id: 901, brand: "Logitech", name: "G Pro X Superlight 2", price: 650.00, image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&q=80&w=400&h=400&sig=ms1", stock: "EN STOCK", tags: ["Wireless", "Pro"], subCat: 'Mouse' },
+  ],
+  'MONITORES': [
+    { id: 1001, brand: "Samsung", name: "Odyssey G7 • 27\" QHD 240Hz", price: 2499.00, image: "https://images.unsplash.com/photo-1547119957-637f8679db1e?auto=format&fit=crop&q=80&w=400&h=400&sig=mu1", stock: "EN STOCK", tags: ["240Hz", "QHD"], subCat: 'Monitores Gamer' },
+  ],
+  'NETWORKING': [
+    { id: 1101, brand: "TP-Link", name: "Archer AX55 • Wi-Fi 6", price: 450.00, image: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&q=80&w=400&h=400&sig=r1", stock: "EN STOCK", tags: ["Wi-Fi 6"], subCat: 'Routers WiFi' },
+  ],
+  'STREAMING': [
+    { id: 1231, brand: "Elgato Stream Deck MK.2", name: "Stream Deck MK.2", price: 799.00, image: "https://images.unsplash.com/photo-1614332287897-cdc485fa562d?auto=format&fit=crop&q=80&w=400&h=400&sig=sd1", stock: "EN STOCK", tags: ["LCD", "Elgato"], subCat: 'Stream Decks' },
+  ],
+  'ACCESORIOS': [
+    { id: 1301, brand: "Ugreen", name: "Cable HDMI 2.1 8K", price: 85.00, image: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?auto=format&fit=crop&q=80&w=400&h=400&sig=cv1", stock: "EN STOCK", tags: ["8K", "HDMI 2.1"], subCat: 'Cables de Video' },
+  ],
   cpu: [
     { id: 101, name: 'Intel Core i9-14900K', specs: '24 Núcleos / 32 Hilos • 6.0GHz', tags: ['LGA 1700', '125W TDP'], price: 2499.00, image: 'https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&q=80&w=400&h=400&sig=cpu1', badge: 'RECOMENDADO', brand: 'Intel', socket: 'LGA 1700', cores: '24', tdp: 'Medio (100-150W)', stock: 'EN STOCK' },
     { id: 102, name: 'AMD Ryzen 7 7800X3D', specs: '8 Núcleos / 16 Hilos • 3D Cache', tags: ['AM5', '120W TDP'], price: 1850.00, oldPrice: 2100, image: 'https://images.unsplash.com/photo-1555617766-c94804975da3?auto=format&fit=crop&q=80&w=400&h=400&sig=cpu2', brand: 'AMD', socket: 'AM5', cores: '8', tdp: 'Medio (100-150W)', stock: 'EN STOCK' },
@@ -675,7 +728,10 @@ export default function CatalogView({
   onToggleWishlist, 
   isLoggedIn,
   isReseller = false,
-  resellerCategories = []
+  resellerCategories = [],
+  searchQuery = '',
+  onClearSearch,
+  onAddToCart
 }: CatalogViewProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [priceRange, setPriceRange] = useState([0, 20000]);
@@ -683,12 +739,12 @@ export default function CatalogView({
   const [notification, setNotification] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   
-  // Reset filters when category changes
+  // Reset filters when category or search changes
   React.useEffect(() => {
     setActiveFilters({});
     setPriceRange([0, 20000]);
     setCurrentPage(1);
-  }, [category]);
+  }, [category, searchQuery]);
 
   const info = categories[category || 'gpu'] || categories.gpu;
   const filters = filterDefinitions[category || 'gpu'] || filterDefinitions.gpu;
@@ -697,8 +753,13 @@ export default function CatalogView({
     let products: any[] = [];
     if (category === 'offers') {
       products = Object.values(categoryData).flat().filter(p => p.oldPrice);
+    } else if (category) {
+      products = categoryData[category] || [];
     } else {
-      products = categoryData[category || 'gpu'] || categoryData.gpu;
+      // Global search: flatten all categories and add category label
+      products = Object.entries(categoryData).flatMap(([key, items]) => 
+        items.map(item => ({ ...item, categoryKey: key, categoryLabel: categories[key]?.title || key }))
+      );
     }
 
     // Filter products for resellers based on approved categories
@@ -752,6 +813,24 @@ export default function CatalogView({
   }, [category, isReseller, resellerCategories]);
 
   const filteredProducts = allProducts.filter(product => {
+    // Search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesName = product.name.toLowerCase().includes(query);
+      const matchesBrand = product.brand?.toLowerCase().includes(query);
+      const matchesTags = product.tags?.some((tag: string) => tag.toLowerCase().includes(query));
+      const matchesSku = product.id.toString().includes(query);
+      const matchesCategory = product.categoryLabel?.toLowerCase().includes(query);
+      
+      // Check technical specs (any property that is a string)
+      const matchesSpecs = Object.entries(product).some(([key, value]) => {
+        if (['name', 'brand', 'tags', 'image', 'images', 'categoryKey', 'categoryLabel'].includes(key)) return false;
+        return typeof value === 'string' && value.toLowerCase().includes(query);
+      });
+
+      if (!matchesName && !matchesBrand && !matchesTags && !matchesSpecs && !matchesSku && !matchesCategory) return false;
+    }
+
     // Price filter
     if (product.price < priceRange[0] || product.price > priceRange[1]) return false;
     
@@ -814,10 +893,27 @@ export default function CatalogView({
 
       {/* Header Section */}
       <div className="space-y-2">
-        <h1 className="text-5xl font-black text-white tracking-tighter">{info.title}</h1>
-        <p className="text-slate-400 text-lg max-w-3xl leading-relaxed">
-          {info.desc}
-        </p>
+        {searchQuery ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 text-primary">
+              <Search className="w-6 h-6" />
+              <span className="text-sm font-black uppercase tracking-[0.3em]">Resultados de búsqueda</span>
+            </div>
+            <h1 className="text-5xl font-black text-white tracking-tighter">
+              Buscando: <span className="text-primary">"{searchQuery}"</span>
+            </h1>
+            <p className="text-slate-400 text-lg max-w-3xl leading-relaxed">
+              Hemos encontrado {filteredProducts.length} productos que coinciden con tu búsqueda en nuestro catálogo.
+            </p>
+          </div>
+        ) : (
+          <>
+            <h1 className="text-5xl font-black text-white tracking-tighter">{info.title}</h1>
+            <p className="text-slate-400 text-lg max-w-3xl leading-relaxed">
+              {info.desc}
+            </p>
+          </>
+        )}
       </div>
 
       <div className="flex flex-col lg:grid lg:grid-cols-[300px_1fr] gap-10">
@@ -832,6 +928,13 @@ export default function CatalogView({
               >
                 Limpiar
               </button>
+            </div>
+
+            <div className="p-4 bg-primary/5 border border-primary/10 rounded-2xl space-y-2">
+              <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Búsqueda Avanzada</h4>
+              <p className="text-[9px] text-slate-500 leading-relaxed font-medium">
+                Puedes buscar por nombre, marca, SKU, especificaciones técnicas o categoría directamente en la barra superior.
+              </p>
             </div>
 
             {filters.map((filter) => (
@@ -870,11 +973,11 @@ export default function CatalogView({
                     <select 
                       value={activeFilters[filter.id]?.[0] || ''}
                       onChange={(e) => toggleFilter(filter.id, e.target.value, 'select')}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white appearance-none focus:ring-1 focus:ring-primary outline-none cursor-pointer transition-all"
+                      className="w-full bg-[#1a1f26] border border-white/10 rounded-xl px-4 py-3 text-xs font-bold text-white appearance-none focus:ring-1 focus:ring-primary outline-none cursor-pointer transition-all"
                     >
-                      <option value="" className="bg-[#151921]">Todos</option>
+                      <option value="" className="bg-[#151921] text-white">Todos</option>
                       {filter.options.map((option: string) => (
-                        <option key={option} value={option} className="bg-[#151921]">{option}</option>
+                        <option key={option} value={option} className="bg-[#151921] text-white">{option}</option>
                       ))}
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none group-hover:text-primary transition-colors" />
@@ -1034,8 +1137,14 @@ export default function CatalogView({
 
                   <div className="p-6 space-y-4 flex-1 flex flex-col">
                     <div className="space-y-1">
-                      <p className="text-[10px] font-medium text-slate-500 uppercase tracking-tight">{product.brand || 'Premium'}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-[10px] font-medium text-slate-500 uppercase tracking-tight">{product.brand || 'Premium'}</p>
+                        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">SKU: {product.id}</p>
+                      </div>
                       <h3 className="font-bold text-white text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2">{product.name}</h3>
+                      {product.categoryLabel && (
+                        <p className="text-[8px] font-black text-primary/60 uppercase tracking-widest mt-1">{product.categoryLabel}</p>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap gap-1.5">
@@ -1053,7 +1162,12 @@ export default function CatalogView({
                       </div>
                       <button 
                         disabled={product.stock === 'AGOTADO'}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onAddToCart?.(product);
+                          setNotification(`"${product.name}" se agregó al carrito`);
+                          setTimeout(() => setNotification(null), 3000);
+                        }}
                         className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                           product.stock === 'AGOTADO' ? 'opacity-20 cursor-not-allowed bg-white/5 text-slate-500' : 'bg-white/5 text-slate-500 hover:text-white hover:bg-primary hover:shadow-lg hover:shadow-primary/20'
                         }`}
@@ -1069,13 +1183,25 @@ export default function CatalogView({
                 <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto">
                   <Search className="w-10 h-10 text-slate-600" />
                 </div>
-                <h3 className="text-xl font-bold text-white">No se encontraron productos</h3>
-                <p className="text-slate-500">Intenta ajustar tus filtros para encontrar lo que buscas.</p>
+                <h3 className="text-xl font-bold text-white">
+                  {searchQuery ? `No se encontraron resultados para "${searchQuery}"` : "No se encontraron productos"}
+                </h3>
+                <p className="text-slate-500">
+                  {searchQuery 
+                    ? "Intenta con términos más generales o verifica la ortografía."
+                    : "Intenta ajustar tus filtros para encontrar lo que buscas."}
+                </p>
                 <button 
-                  onClick={() => {setActiveFilters({}); setPriceRange([800, 8500]);}}
+                  onClick={() => {
+                    setActiveFilters({}); 
+                    setPriceRange([0, 20000]);
+                    if (searchQuery) {
+                      onClearSearch?.();
+                    }
+                  }}
                   className="text-primary font-bold hover:underline"
                 >
-                  Limpiar todos los filtros
+                  {searchQuery ? "Limpiar búsqueda" : "Limpiar todos los filtros"}
                 </button>
               </div>
             )}

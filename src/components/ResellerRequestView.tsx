@@ -126,7 +126,7 @@ export default function ResellerRequestView({ onNavigate, onSubmitRequest }: Res
     };
     onSubmitRequest(request);
     onNavigate('home');
-    alert('Solicitud enviada con éxito. Nos pondremos en contacto pronto.');
+    console.log('Solicitud enviada con éxito. Nos pondremos en contacto pronto.');
   };
 
   const renderStep1 = () => (

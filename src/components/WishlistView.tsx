@@ -30,17 +30,17 @@ export default function WishlistView({ wishlist, onToggleWishlist, onProductClic
       </div>
 
       {wishlistedProducts.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {wishlistedProducts.map((product) => (
             <motion.div
               key={product.id}
               layout
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-[#151921] rounded-3xl p-5 border border-white/5 hover:border-primary/50 transition-all group relative flex flex-col"
+              className="bg-[#151921] rounded-2xl p-3 border border-white/5 hover:border-primary/50 transition-all group relative flex flex-col"
             >
               <div 
-                className="relative aspect-square bg-[#0B0E14] rounded-2xl mb-6 overflow-hidden flex items-center justify-center cursor-pointer"
+                className="relative aspect-square bg-[#0B0E14] rounded-xl mb-3 overflow-hidden flex items-center justify-center cursor-pointer"
                 onClick={() => onProductClick(product)}
               >
                 <img 
@@ -54,36 +54,36 @@ export default function WishlistView({ wishlist, onToggleWishlist, onProductClic
                     e.stopPropagation();
                     onToggleWishlist(product.id);
                   }}
-                  className="absolute top-3 right-3 w-8 h-8 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-rose-500/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="absolute top-2 right-2 w-7 h-7 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-rose-500/40 opacity-0 group-hover:opacity-100 transition-opacity"
                   title="Eliminar de la lista"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              <div className="space-y-4 flex-1 flex flex-col">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-medium text-slate-500 uppercase tracking-tight">{product.brand || 'Premium'}</p>
+              <div className="space-y-2 flex-1 flex flex-col">
+                <div className="space-y-0.5">
+                  <p className="text-[8px] font-medium text-slate-500 uppercase tracking-tight">{product.brand || 'Premium'}</p>
                   <h3 
-                    className="font-bold text-white text-sm leading-snug group-hover:text-primary transition-colors line-clamp-2 cursor-pointer"
+                    className="font-bold text-white text-[11px] leading-tight group-hover:text-primary transition-colors line-clamp-2 cursor-pointer"
                     onClick={() => onProductClick(product)}
                   >
                     {product.name}
                   </h3>
                 </div>
 
-                <div className="flex items-end justify-between pt-2 mt-auto">
-                  <div className="space-y-1">
-                    {product.oldPrice && <p className="text-[10px] text-slate-500 line-through">S/ {product.oldPrice}</p>}
-                    <p className="text-blue-500 font-black text-xl tracking-tighter">S/ {new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(product.price)}</p>
+                <div className="flex items-end justify-between pt-1 mt-auto">
+                  <div className="space-y-0">
+                    {product.oldPrice && <p className="text-[8px] text-slate-500 line-through">S/ {product.oldPrice}</p>}
+                    <p className="text-blue-500 font-black text-sm tracking-tighter">S/ {new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(product.price)}</p>
                   </div>
-                  <button className="w-10 h-10 rounded-xl bg-white/5 text-slate-500 hover:text-white hover:bg-primary hover:shadow-lg hover:shadow-primary/20 flex items-center justify-center transition-all">
-                    <ShoppingCart className="w-6 h-6 stroke-[1.5]" />
+                  <button className="w-8 h-8 rounded-lg bg-white/5 text-slate-500 hover:text-white hover:bg-primary hover:shadow-lg hover:shadow-primary/20 flex items-center justify-center transition-all">
+                    <ShoppingCart className="w-4 h-4 stroke-[1.5]" />
                   </button>
                 </div>
                 
-                <button className="w-full py-2 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 border border-white/5">
-                  <Bell className="w-3 h-3" /> Configurar alerta de precio
+                <button className="w-full py-1.5 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white rounded-lg text-[8px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 border border-white/5">
+                  <Bell className="w-2.5 h-2.5" /> Alerta
                 </button>
               </div>
             </motion.div>

@@ -35,7 +35,8 @@ import {
   Sparkles,
   Handshake,
   CheckCircle2,
-  XCircle
+  XCircle,
+  Zap
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -53,6 +54,9 @@ interface AdminDashboardViewProps {
   onApproveReseller: (id: string, status: 'Aprobado' | 'Rechazado') => void;
   tenants?: any[];
   isSuperAdmin?: boolean;
+  onUpdateTenant?: (id: string, updates: any) => void;
+  onDeleteTenant?: (id: string) => void;
+  onToggleTenantStatus?: (id: string) => void;
 }
 
 const salesData = [
@@ -65,19 +69,144 @@ const salesData = [
   { name: 'DOM', value: 58000 },
 ];
 
+const CATEGORIES_DATA = {
+  'COMPONENTES': ['Procesadores (CPUs)', 'Tarjetas de Video (GPUs)', 'Placas Base (Motherboards)', 'Memoria RAM', 'Almacenamiento', 'Fuentes de Poder (PSU)', 'Gabinetes', 'Refrigeración'],
+  'LAPTOPS Y COMPUTADORAS': ['Laptops Gaming', 'Laptops Profesionales', 'Laptops Estudiantiles', 'PCs Pre-armadas', 'All-in-One PCs'],
+  'PERIFÉRICOS': ['Teclados', 'Mouse', 'Headsets / Audífonos', 'Webcams', 'Micrófonos', 'Mousepads', 'Sillas Gamer'],
+  'MONITORES': ['Monitores Gamer', 'Monitores Oficina', 'Monitores 4K / Diseño', 'Monitores Curvos'],
+  'NETWORKING': ['Routers WiFi', 'Switches', 'Adaptadores de Red', 'Access Points'],
+  'STREAMING': ['Iluminación', 'Pantallas Verdes', 'Capturadoras de Video', 'Stream Decks', 'Cámaras de Streaming'],
+  'ACCESORIOS': ['Cables de Video', 'Cables USB', 'Adaptadores', 'UPS / Estabilizadores']
+};
+
 export default function AdminDashboardView({ 
   onNavigate, 
   resellerRequests, 
   onApproveReseller,
   tenants = [],
-  isSuperAdmin = false
+  isSuperAdmin = false,
+  onUpdateTenant,
+  onDeleteTenant,
+  onToggleTenantStatus
 }: AdminDashboardViewProps) {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [dashboardDays, setDashboardDays] = useState(40);
+  const [offersPage, setOffersPage] = useState(1);
+  const itemsPerPage = 5;
+
+  const salesData7 = [
+    { name: 'LUN', value: 12000 },
+    { name: 'MAR', value: 18000 },
+    { name: 'MIE', value: 32000 },
+    { name: 'JUE', value: 28000 },
+    { name: 'VIE', value: 45000 },
+    { name: 'SAB', value: 62000 },
+    { name: 'DOM', value: 58000 },
+  ];
+
+  const salesData40 = [
+    { name: 'Sem 1', value: 120000 },
+    { name: 'Sem 2', value: 180000 },
+    { name: 'Sem 3', value: 320000 },
+    { name: 'Sem 4', value: 280000 },
+    { name: 'Sem 5', value: 350000 },
+    { name: 'Sem 6', value: 410000 },
+  ];
+
+  const currentSalesData = dashboardDays === 7 ? salesData7 : salesData40;
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    sku: '',
+    name: '',
+    cat: 'COMPONENTES',
+    subCat: 'Procesadores (CPUs)',
+    price: '',
+    stock: 0,
+    visible: true
+  });
+  const [inventorySearch, setInventorySearch] = useState('');
+  const [inventoryCategory, setInventoryCategory] = useState('Todas las Categorías');
+  const [inventorySubCategory, setInventorySubCategory] = useState('Todas las Subcategorías');
+  const [inventoryStatus, setInventoryStatus] = useState('Estado: Todos');
   const [editingBanner, setEditingBanner] = useState<any | null>(null);
+  const [editingTenant, setEditingTenant] = useState<any | null>(null);
   const [orderFilter, setOrderFilter] = useState('Todas');
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedReseller, setSelectedReseller] = useState<any | null>(null);
+
+  const [productsData, setProductsData] = useState([
+    { id: 1, sku: 'PROD-001', name: 'Intel Core i9-14900K', cat: 'COMPONENTES', subCat: 'Procesadores (CPUs)', price: 'S/ 2,499.00', stock: 85, visible: true },
+    { id: 2, sku: 'PROD-002', name: 'MacBook Pro 14 M3 Max', cat: 'LAPTOPS Y COMPUTADORAS', subCat: 'Laptops Gaming', price: 'S/ 12,499.00', stock: 40, visible: true },
+    { id: 3, sku: 'PROD-003', name: 'Teclado ROG Strix Scope', cat: 'PERIFÉRICOS', subCat: 'Teclados', price: 'S/ 650.00', stock: 15, visible: false },
+    { id: 4, sku: 'PROD-004', name: 'Monitor ROG Swift 360Hz', cat: 'MONITORES', subCat: 'Monitores Gamer', price: 'S/ 3,800.00', stock: 25, visible: true },
+    { id: 5, sku: 'PROD-005', name: 'Router ASUS Wi-Fi 6E', cat: 'NETWORKING', subCat: 'Routers WiFi', price: 'S/ 1,400.00', stock: 60, visible: true },
+  ]);
+
+  const filteredProducts = productsData.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(inventorySearch.toLowerCase()) || 
+                         p.sku.toLowerCase().includes(inventorySearch.toLowerCase()) ||
+                         p.cat.toLowerCase().includes(inventorySearch.toLowerCase()) ||
+                         (p.subCat && p.subCat.toLowerCase().includes(inventorySearch.toLowerCase()));
+    
+    const matchesCategory = inventoryCategory === 'Todas las Categorías' || p.cat === inventoryCategory;
+    
+    const matchesSubCategory = inventorySubCategory === 'Todas las Subcategorías' || p.subCat === inventorySubCategory;
+    
+    const matchesStatus = inventoryStatus === 'Estado: Todos' || 
+                         (inventoryStatus === 'En Stock' && p.stock >= 50) ||
+                         (inventoryStatus === 'Bajo Stock' && p.stock > 0 && p.stock < 50) ||
+                         (inventoryStatus === 'Agotado' && p.stock === 0);
+
+    return matchesSearch && matchesCategory && matchesSubCategory && matchesStatus;
+  });
+
+  const handleExportCSV = () => {
+    const headers = ['ID', 'SKU', 'Nombre', 'Categoría', 'Subcategoría', 'Precio', 'Stock', 'Visible'];
+    const csvContent = [
+      headers.join(','),
+      ...productsData.map(p => [p.id, p.sku, `"${p.name}"`, p.cat, p.subCat, `"${p.price}"`, p.stock, p.visible].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'inventario_techmarket.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleImportCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        const lines = text.split('\n');
+        const newProducts = lines.slice(1).filter(line => line.trim()).map((line, index) => {
+          const [sku, name, cat, subCat, price, stock] = line.split(',');
+          return {
+            id: productsData.length + index + 1,
+            sku: sku || `IMPORT-${Date.now()}-${index}`,
+            name: name || 'Producto Importado',
+            cat: cat || 'COMPONENTES',
+            subCat: subCat || 'Procesadores',
+            price: price || 'S/ 0.00',
+            stock: parseInt(stock) || 0,
+            image: 'https://picsum.photos/seed/import/400/400',
+            visible: true
+          };
+        });
+
+        setProductsData([...productsData, ...newProducts]);
+        alert(`${newProducts.length} productos importados con éxito.`);
+      };
+      reader.readAsText(file);
+    }
+  };
 
   const [bannersData, setBannersData] = useState([
     { id: '#B-2024-001', title: 'Cyber Week 2023', subtitle: 'Hasta 50% de descuento', img: 'https://picsum.photos/seed/banner1/800/400', active: true, description: 'Impulsa tu productividad con la nueva generación de estaciones de trabajo potenciadas por Inteligencia Artificial. Ofertas exclusivas de temporada.', redirectUrl: 'https://techmarket.smart/', expiryDate: '2024-12-31', priority: 8, clicks: 12450, ctr: 4.2 },
@@ -116,6 +245,14 @@ export default function AdminDashboardView({
   }
 
   const [resellersData, setResellersData] = useState(resellerRequests);
+  const [offersData, setOffersData] = useState([
+    { name: 'Black Tech Friday', icon: <Megaphone className="w-4 h-4 text-primary" />, discount: '25%', code: 'BLACK25', validity: '24 Nov - 30 Nov', subValidity: 'Expira en 5 días', usage: 750, total: 1000, status: 'Activo' },
+    { name: 'Bienvenida Smart', icon: <Star className="w-4 h-4 text-amber-500" />, discount: '10%', code: 'TECH10', validity: 'Indefinido', subValidity: 'Solo nuevos usuarios', usage: 1240, total: 5000, status: 'Activo' },
+    { name: 'Navidad Gamer', icon: <Sparkles className="w-4 h-4 text-emerald-500" />, discount: '15%', code: 'XMAS15', validity: '01 Dic - 25 Dic', subValidity: 'Todo el catálogo', usage: 0, total: 2000, status: 'Programado' },
+    { name: 'Socio VIP', icon: <Handshake className="w-4 h-4 text-indigo-500" />, discount: '20%', code: 'VIP20', validity: 'Indefinido', subValidity: 'Solo para socios', usage: 85, total: 500, status: 'Activo' },
+    { name: 'Outlet Verano', icon: <Tag className="w-4 h-4 text-rose-500" />, discount: '40%', code: 'OUTLET40', validity: '01 Ene - 31 Ene', subValidity: 'Productos seleccionados', usage: 0, total: 1000, status: 'Programado' },
+    { name: 'Cyber Monday', icon: <Zap className="w-4 h-4 text-amber-400" />, discount: '30%', code: 'CYBER30', validity: '01 Dic - 02 Dic', subValidity: 'Solo online', usage: 0, total: 3000, status: 'Programado' },
+  ]);
 
   const handleResellerAction = (id: string, newStatus: 'Aprobado' | 'Rechazado') => {
     onApproveReseller(id, newStatus);
@@ -162,13 +299,27 @@ export default function AdminDashboardView({
             <p className="text-slate-500 text-xs">Visualización dinámica de ingresos por día</p>
           </div>
           <div className="flex bg-black/40 p-1 rounded-xl">
-            <button className="px-4 py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">7 Días</button>
-            <button className="px-4 py-2 text-[10px] font-black text-white bg-primary/20 rounded-lg uppercase tracking-widest">30 Días</button>
+            <button 
+              onClick={() => setDashboardDays(7)}
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-lg ${
+                dashboardDays === 7 ? 'text-white bg-primary/20' : 'text-slate-500 hover:text-white'
+              }`}
+            >
+              7 Días
+            </button>
+            <button 
+              onClick={() => setDashboardDays(40)}
+              className={`px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-all rounded-lg ${
+                dashboardDays === 40 ? 'text-white bg-primary/20' : 'text-slate-500 hover:text-white'
+              }`}
+            >
+              40 Días
+            </button>
           </div>
         </div>
         <div className="h-[300px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={salesData}>
+            <AreaChart data={currentSalesData}>
               <defs>
                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#0f5af0" stopOpacity={0.3}/>
@@ -311,13 +462,20 @@ export default function AdminDashboardView({
           <p className="text-slate-500 text-sm mt-2">Administra tus productos, stock y visibilidad del catálogo.</p>
         </div>
         <div className="flex items-center gap-4">
-          <button className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all">
+          <label className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all cursor-pointer">
             <Upload className="w-4 h-4" /> Importar CSV
-          </button>
-          <button className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all">
+            <input type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
+          </label>
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all"
+          >
             <Download className="w-4 h-4" /> Exportar
           </button>
-          <button className="flex items-center gap-2 px-8 py-3 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/80 transition-all shadow-xl shadow-primary/30">
+          <button 
+            onClick={() => setIsAddingProduct(true)}
+            className="flex items-center gap-2 px-8 py-3 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/80 transition-all shadow-xl shadow-primary/30"
+          >
             <Plus className="w-4 h-4" /> Añadir Producto
           </button>
         </div>
@@ -330,20 +488,45 @@ export default function AdminDashboardView({
             <input 
               type="text" 
               placeholder="Buscar por SKU, nombre o categoría..."
+              value={inventorySearch}
+              onChange={(e) => setInventorySearch(e.target.value)}
               className="w-full bg-black/20 border border-white/10 rounded-xl pl-12 pr-4 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all"
             />
           </div>
-          <select className="bg-black/20 border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none min-w-[200px]">
-            <option>Todas las Categorías</option>
-            <option>Laptops</option>
-            <option>Celulares</option>
-            <option>Accesorios</option>
+          <select 
+            value={inventoryCategory}
+            onChange={(e) => {
+              setInventoryCategory(e.target.value);
+              setInventorySubCategory('Todas las Subcategorías');
+            }}
+            className="bg-[#1a1f26] border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none min-w-[200px]"
+          >
+            <option value="Todas las Categorías" className="bg-[#151921] text-white">Todas las Categorías</option>
+            {Object.keys(CATEGORIES_DATA).map(cat => (
+              <option key={cat} value={cat} className="bg-[#151921] text-white">{cat}</option>
+            ))}
           </select>
-          <select className="bg-black/20 border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none min-w-[150px]">
-            <option>Estado: Todos</option>
-            <option>En Stock</option>
-            <option>Bajo Stock</option>
-            <option>Agotado</option>
+          {inventoryCategory !== 'Todas las Categorías' && (
+            <select 
+              value={inventorySubCategory}
+              onChange={(e) => setInventorySubCategory(e.target.value)}
+              className="bg-[#1a1f26] border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none min-w-[200px]"
+            >
+              <option value="Todas las Subcategorías" className="bg-[#151921] text-white">Todas las Subcategorías</option>
+              {CATEGORIES_DATA[inventoryCategory as keyof typeof CATEGORIES_DATA].map(sub => (
+                <option key={sub} value={sub} className="bg-[#151921] text-white">{sub}</option>
+              ))}
+            </select>
+          )}
+          <select 
+            value={inventoryStatus}
+            onChange={(e) => setInventoryStatus(e.target.value)}
+            className="bg-[#1a1f26] border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none min-w-[150px]"
+          >
+            <option value="Estado: Todos" className="bg-[#151921] text-white">Estado: Todos</option>
+            <option value="En Stock" className="bg-[#151921] text-white">En Stock</option>
+            <option value="Bajo Stock" className="bg-[#151921] text-white">Bajo Stock</option>
+            <option value="Agotado" className="bg-[#151921] text-white">Agotado</option>
           </select>
         </div>
 
@@ -354,7 +537,7 @@ export default function AdminDashboardView({
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">IMG</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">SKU</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">NOMBRE DEL PRODUCTO</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">CATEGORÍA</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">CATEGORÍA / SUBCATEGORÍA</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">PRECIO</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">STOCK</th>
                 <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">VISIBLE</th>
@@ -362,11 +545,7 @@ export default function AdminDashboardView({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {[
-                { id: 1, sku: 'PROD-001', name: 'MacBook Air M2', cat: 'LAPTOPS', price: 'S/ 4,500.00', stock: 85, visible: true },
-                { id: 2, sku: 'PROD-002', name: 'iPhone 15 Pro Max Titanium', cat: 'CELULARES', price: 'S/ 5,200.00', stock: 40, visible: true },
-                { id: 3, sku: 'PROD-003', name: 'Galaxy Watch 6 Pro', cat: 'ACCESORIOS', price: 'S/ 1,200.00', stock: 15, visible: false },
-              ].map((p) => (
+              {filteredProducts.map((p) => (
                 <tr key={p.id} className="hover:bg-white/2 transition-colors group">
                   <td className="px-6 py-6">
                     <div className="w-12 h-12 rounded-xl bg-black/40 p-2">
@@ -376,9 +555,16 @@ export default function AdminDashboardView({
                   <td className="px-6 py-6 text-xs font-bold text-slate-500">{p.sku}</td>
                   <td className="px-6 py-6 text-sm font-bold text-white">{p.name}</td>
                   <td className="px-6 py-6">
-                    <span className="text-[10px] font-black bg-blue-500 text-white px-3 py-1 rounded-lg uppercase tracking-widest">
-                      {p.cat}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-black bg-blue-500/20 text-blue-400 px-3 py-1 rounded-lg uppercase tracking-widest w-fit">
+                        {p.cat}
+                      </span>
+                      {p.subCat && (
+                        <span className="text-[9px] font-bold text-slate-400 px-3 py-0.5 rounded-md border border-white/5 w-fit">
+                          {p.subCat}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-6 text-sm font-black text-white">{p.price}</td>
                   <td className="px-6 py-6">
@@ -393,7 +579,12 @@ export default function AdminDashboardView({
                     </div>
                   </td>
                   <td className="px-6 py-6">
-                    <button className={`w-12 h-6 rounded-full transition-all relative ${p.visible ? 'bg-primary' : 'bg-slate-800'}`}>
+                    <button 
+                      onClick={() => {
+                        setProductsData(prev => prev.map(prod => prod.id === p.id ? { ...prod, visible: !prod.visible } : prod));
+                      }}
+                      className={`w-12 h-6 rounded-full transition-all relative ${p.visible ? 'bg-primary' : 'bg-slate-800'}`}
+                    >
                       <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${p.visible ? 'left-7' : 'left-1'}`} />
                     </button>
                   </td>
@@ -405,7 +596,14 @@ export default function AdminDashboardView({
                       >
                         <Edit2 className="w-3 h-3" /> Editar
                       </button>
-                      <button className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all">
+                      <button 
+                        onClick={() => {
+                          if (window.confirm('¿Estás seguro de eliminar este producto?')) {
+                            setProductsData(prev => prev.filter(prod => prod.id !== p.id));
+                          }
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all"
+                      >
                         <Trash2 className="w-3 h-3" /> Eliminar
                       </button>
                     </div>
@@ -417,7 +615,7 @@ export default function AdminDashboardView({
         </div>
 
         <div className="flex items-center justify-between pt-6 border-t border-white/5">
-          <p className="text-xs font-bold text-slate-500">Mostrando 3 de 128 productos</p>
+          <p className="text-xs font-bold text-slate-500">Mostrando {filteredProducts.length} de {productsData.length} productos</p>
           <div className="flex items-center gap-2">
             <button className="p-2 bg-white/5 border border-white/10 rounded-lg text-slate-500 hover:text-white disabled:opacity-50" disabled>
               <ChevronLeft className="w-5 h-5" />
@@ -426,6 +624,155 @@ export default function AdminDashboardView({
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAddProduct = () => (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest mb-4">
+            <span>Productos</span> <ChevronRight className="w-3 h-3" /> <span className="text-white">Añadir Producto</span>
+          </div>
+          <h2 className="text-4xl font-black text-white uppercase tracking-tighter">Nuevo Producto</h2>
+          <p className="text-slate-500 text-sm mt-2 uppercase tracking-widest font-bold">Completa la información para registrar un nuevo producto en el catálogo.</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setIsAddingProduct(false)}
+            className="px-8 py-3 bg-white/5 border border-white/10 rounded-xl text-xs font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all"
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={() => {
+              const id = productsData.length + 1;
+              setProductsData([...productsData, { ...newProduct, id, price: `S/ ${newProduct.price}` }]);
+              setIsAddingProduct(false);
+              setNewProduct({ sku: '', name: '', cat: 'COMPONENTES', subCat: 'Procesadores (CPUs)', price: '', stock: 0, visible: true });
+            }}
+            className="px-10 py-3 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/80 transition-all shadow-xl shadow-primary/30 flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Crear Producto
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          <section className="bg-[#151921] border border-white/5 rounded-3xl p-8 space-y-8">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <AlertCircle className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-black text-white uppercase tracking-tight">Información General</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nombre del Producto</label>
+                <input 
+                  type="text" 
+                  value={newProduct.name}
+                  onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                  placeholder="Ej: MacBook Pro M3"
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">SKU</label>
+                <input 
+                  type="text" 
+                  value={newProduct.sku}
+                  onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+                  placeholder="PROD-XXX"
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Categoría</label>
+                <select 
+                  value={newProduct.cat}
+                  onChange={(e) => {
+                    const cat = e.target.value as keyof typeof CATEGORIES_DATA;
+                    setNewProduct({ 
+                      ...newProduct, 
+                      cat, 
+                      subCat: CATEGORIES_DATA[cat][0] 
+                    });
+                  }}
+                  className="w-full bg-[#1a1f26] border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none"
+                >
+                  {Object.keys(CATEGORIES_DATA).map(cat => (
+                    <option key={cat} value={cat} className="bg-[#151921] text-white">{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Subcategoría</label>
+                <select 
+                  value={newProduct.subCat}
+                  onChange={(e) => setNewProduct({ ...newProduct, subCat: e.target.value })}
+                  className="w-full bg-[#1a1f26] border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none"
+                >
+                  {CATEGORIES_DATA[newProduct.cat as keyof typeof CATEGORIES_DATA].map(sub => (
+                    <option key={sub} value={sub} className="bg-[#151921] text-white">{sub}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Precio (S/)</label>
+                <input 
+                  type="text" 
+                  value={newProduct.price}
+                  onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                  placeholder="0.00"
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Stock Inicial</label>
+                <input 
+                  type="number" 
+                  value={newProduct.stock}
+                  onChange={(e) => setNewProduct({ ...newProduct, stock: parseInt(e.target.value) || 0 })}
+                  className="w-full bg-black/20 border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                />
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div className="space-y-8">
+          <section className="bg-[#151921] border border-white/5 rounded-3xl p-8 space-y-6">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                <ImageIcon className="w-5 h-5" />
+              </div>
+              <h3 className="text-xl font-black text-white uppercase tracking-tight">Imágenes</h3>
+            </div>
+            <div className="aspect-square bg-black/40 rounded-2xl border-2 border-dashed border-white/10 flex flex-col items-center justify-center gap-4 cursor-pointer hover:border-primary/50 transition-all">
+              <Upload className="w-8 h-8 text-slate-500" />
+              <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Subir Imagen Principal</p>
+            </div>
+          </section>
+
+          <section className="bg-[#151921] border border-white/5 rounded-3xl p-8 space-y-6">
+            <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Publicación</h3>
+            <div className="flex items-center justify-between p-4 bg-white/2 rounded-2xl">
+              <div>
+                <p className="text-sm font-bold text-white">Visibilidad</p>
+                <p className="text-[10px] text-slate-500">Mostrar en el catálogo</p>
+              </div>
+              <button 
+                onClick={() => setNewProduct({ ...newProduct, visible: !newProduct.visible })}
+                className={`w-12 h-6 rounded-full transition-all relative ${newProduct.visible ? 'bg-primary' : 'bg-slate-800'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${newProduct.visible ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -448,7 +795,13 @@ export default function AdminDashboardView({
           >
             Cancelar
           </button>
-          <button className="px-10 py-3 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/80 transition-all shadow-xl shadow-primary/30 flex items-center gap-2">
+          <button 
+            onClick={() => {
+              setProductsData(prev => prev.map(p => p.id === editingProduct.id ? editingProduct : p));
+              setEditingProduct(null);
+            }}
+            className="px-10 py-3 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/80 transition-all shadow-xl shadow-primary/30 flex items-center gap-2"
+          >
             <Save className="w-4 h-4" /> Guardar Cambios
           </button>
         </div>
@@ -468,7 +821,8 @@ export default function AdminDashboardView({
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Nombre del Producto</label>
                 <input 
                   type="text" 
-                  defaultValue={editingProduct?.name + " (2023)"}
+                  value={editingProduct?.name}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
                   className="w-full bg-black/20 border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 />
               </div>
@@ -476,23 +830,48 @@ export default function AdminDashboardView({
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">SKU</label>
                 <input 
                   type="text" 
-                  defaultValue="LAP-MAC-M2-001"
+                  value={editingProduct?.sku}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, sku: e.target.value })}
                   className="w-full bg-black/20 border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Categoría</label>
-                <select className="w-full bg-black/20 border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none">
-                  <option>Laptops</option>
-                  <option>Celulares</option>
-                  <option>Accesorios</option>
+                <select 
+                  value={editingProduct?.cat}
+                  onChange={(e) => {
+                    const cat = e.target.value as keyof typeof CATEGORIES_DATA;
+                    setEditingProduct({ 
+                      ...editingProduct, 
+                      cat, 
+                      subCat: CATEGORIES_DATA[cat][0] 
+                    });
+                  }}
+                  className="w-full bg-[#1a1f26] border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none"
+                >
+                  {Object.keys(CATEGORIES_DATA).map(cat => (
+                    <option key={cat} value={cat} className="bg-[#151921] text-white">{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Subcategoría</label>
+                <select 
+                  value={editingProduct?.subCat}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, subCat: e.target.value })}
+                  className="w-full bg-[#1a1f26] border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none"
+                >
+                  {CATEGORIES_DATA[editingProduct?.cat as keyof typeof CATEGORIES_DATA]?.map(sub => (
+                    <option key={sub} value={sub} className="bg-[#151921] text-white">{sub}</option>
+                  ))}
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Precio (S/)</label>
                 <input 
                   type="text" 
-                  defaultValue="4,899.00"
+                  value={editingProduct?.price.replace('S/ ', '')}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, price: `S/ ${e.target.value}` })}
                   className="w-full bg-black/20 border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 />
               </div>
@@ -500,7 +879,8 @@ export default function AdminDashboardView({
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Stock Actual</label>
                 <input 
                   type="number" 
-                  defaultValue="15"
+                  value={editingProduct?.stock}
+                  onChange={(e) => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })}
                   className="w-full bg-black/20 border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 />
               </div>
@@ -679,7 +1059,7 @@ export default function AdminDashboardView({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {filteredOrders.map((order) => (
+              {filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((order) => (
                 <tr key={order.id} className="hover:bg-white/2 transition-colors group">
                   <td className="px-6 py-6 text-sm font-black text-primary italic">{order.id}</td>
                   <td className="px-6 py-6">
@@ -716,7 +1096,7 @@ export default function AdminDashboardView({
         </div>
 
         <div className="flex items-center justify-between pt-6 border-t border-white/5">
-          <p className="text-xs font-bold text-slate-500">Mostrando {filteredOrders.length} de {ordersData.length} resultados</p>
+          <p className="text-xs font-bold text-slate-500">Mostrando {Math.min(itemsPerPage, filteredOrders.length - (currentPage - 1) * itemsPerPage)} de {filteredOrders.length} resultados</p>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
@@ -726,21 +1106,22 @@ export default function AdminDashboardView({
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-1">
-              {[1, 2, 3, '...', 248].map((page, i) => (
+              {Array.from({ length: Math.ceil(filteredOrders.length / itemsPerPage) }).map((_, i) => (
                 <button 
                   key={i}
-                  onClick={() => typeof page === 'number' && setCurrentPage(page)}
+                  onClick={() => setCurrentPage(i + 1)}
                   className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all ${
-                    page === currentPage ? 'bg-primary text-white' : 'text-slate-500 hover:bg-white/5 hover:text-white'
+                    i + 1 === currentPage ? 'bg-primary text-white' : 'text-slate-500 hover:bg-white/5 hover:text-white'
                   }`}
                 >
-                  {page}
+                  {i + 1}
                 </button>
               ))}
             </div>
             <button 
-              onClick={() => setCurrentPage(prev => prev + 1)}
-              className="p-2 bg-white/5 border border-white/10 rounded-lg text-slate-500 hover:text-white"
+              onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredOrders.length / itemsPerPage), prev + 1))}
+              disabled={currentPage === Math.ceil(filteredOrders.length / itemsPerPage)}
+              className="p-2 bg-white/5 border border-white/10 rounded-lg text-slate-500 hover:text-white disabled:opacity-50"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
@@ -953,10 +1334,7 @@ export default function AdminDashboardView({
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {[
-                { name: 'Black Tech Friday', icon: <Megaphone className="w-4 h-4 text-primary" />, discount: '25%', code: 'BLACK25', validity: '24 Nov - 30 Nov', subValidity: 'Expira en 5 días', usage: 750, total: 1000, status: 'Activo' },
-                { name: 'Bienvenida Smart', icon: <Star className="w-4 h-4 text-amber-500" />, discount: '10%', code: 'TECH10', validity: 'Indefinido', subValidity: 'Solo nuevos usuarios', usage: 1240, total: 5000, status: 'Activo' },
-              ].map((campaign, i) => (
+              {offersData.slice((offersPage - 1) * itemsPerPage, offersPage * itemsPerPage).map((campaign, i) => (
                 <tr key={i} className="group hover:bg-white/2 transition-colors">
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
@@ -1004,16 +1382,33 @@ export default function AdminDashboardView({
           </table>
         </div>
         <div className="p-8 border-t border-white/5 flex items-center justify-between">
-          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Precios expresados en Soles (S/)</p>
+          <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest">Mostrando {Math.min(itemsPerPage, offersData.length - (offersPage - 1) * itemsPerPage)} de {offersData.length} ofertas</p>
           <div className="flex items-center gap-2">
-            <button className="p-2 bg-white/5 border border-white/10 rounded-lg text-slate-500 hover:text-white">
+            <button 
+              onClick={() => setOffersPage(prev => Math.max(1, prev - 1))}
+              disabled={offersPage === 1}
+              className="p-2 bg-white/5 border border-white/10 rounded-lg text-slate-500 hover:text-white disabled:opacity-50"
+            >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-1">
-              <button className="w-8 h-8 rounded-lg bg-primary text-white text-[10px] font-black transition-all">1</button>
-              <button className="w-8 h-8 rounded-lg text-slate-500 hover:bg-white/5 hover:text-white text-[10px] font-black transition-all">2</button>
+              {Array.from({ length: Math.ceil(offersData.length / itemsPerPage) }).map((_, i) => (
+                <button 
+                  key={i}
+                  onClick={() => setOffersPage(i + 1)}
+                  className={`w-8 h-8 rounded-lg text-[10px] font-black transition-all ${
+                    i + 1 === offersPage ? 'bg-primary text-white' : 'text-slate-500 hover:bg-white/5 hover:text-white'
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
             </div>
-            <button className="p-2 bg-white/5 border border-white/10 rounded-lg text-slate-500 hover:text-white">
+            <button 
+              onClick={() => setOffersPage(prev => Math.min(Math.ceil(offersData.length / itemsPerPage), prev + 1))}
+              disabled={offersPage === Math.ceil(offersData.length / itemsPerPage)}
+              className="p-2 bg-white/5 border border-white/10 rounded-lg text-slate-500 hover:text-white disabled:opacity-50"
+            >
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
@@ -1094,9 +1489,13 @@ export default function AdminDashboardView({
             <div className="space-y-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Estado</label>
-                <select className="w-full bg-black/20 border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none">
-                  <option selected={editingBanner?.active}>Activo</option>
-                  <option selected={!editingBanner?.active}>Pausado</option>
+                <select 
+                  value={editingBanner?.active ? 'Activo' : 'Pausado'}
+                  onChange={(e) => setEditingBanner({ ...editingBanner, active: e.target.value === 'Activo' })}
+                  className="w-full bg-[#1a1f26] border border-white/10 rounded-xl px-6 py-4 text-sm font-bold text-white outline-none focus:ring-2 focus:ring-primary/50 transition-all appearance-none"
+                >
+                  <option value="Activo" className="bg-[#151921] text-white">Activo</option>
+                  <option value="Pausado" className="bg-[#151921] text-white">Pausado</option>
                 </select>
               </div>
               <div className="space-y-2">
@@ -1127,7 +1526,8 @@ export default function AdminDashboardView({
                   type="range" 
                   min="1" 
                   max="10" 
-                  defaultValue={editingBanner?.priority}
+                  value={editingBanner?.priority}
+                  onChange={(e) => setEditingBanner({ ...editingBanner, priority: parseInt(e.target.value) })}
                   className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-primary"
                 />
                 <div className="flex justify-between text-[8px] font-black text-slate-600 uppercase tracking-widest">
@@ -1194,11 +1594,11 @@ export default function AdminDashboardView({
                 className="bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-xs font-bold text-white outline-none focus:ring-1 focus:ring-primary/40 w-64"
               />
             </div>
-            <select className="bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest outline-none">
-              <option>Todos los Estados</option>
-              <option>Pendiente</option>
-              <option>Aprobado</option>
-              <option>Rechazado</option>
+            <select className="bg-[#1a1f26] border border-white/10 rounded-xl px-4 py-2 text-[10px] font-black text-white uppercase tracking-widest outline-none">
+              <option className="bg-[#151921] text-white">Todos los Estados</option>
+              <option className="bg-[#151921] text-white">Pendiente</option>
+              <option className="bg-[#151921] text-white">Aprobado</option>
+              <option className="bg-[#151921] text-white">Rechazado</option>
             </select>
           </div>
         </div>
@@ -1520,10 +1920,19 @@ export default function AdminDashboardView({
                   </td>
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-3">
-                      <button className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all">
+                      <button 
+                        onClick={() => setEditingTenant(tenant)}
+                        className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-all"
+                      >
                         <Edit2 className="w-4 h-4" />
                       </button>
-                      <button className="p-2 hover:bg-white/5 rounded-lg text-slate-400 hover:text-rose-500 transition-all">
+                      <button 
+                        onClick={() => onToggleTenantStatus?.(tenant.id)}
+                        className={`p-2 hover:bg-white/5 rounded-lg transition-all ${
+                          tenant.status === 'active' ? 'text-slate-400 hover:text-rose-500' : 'text-rose-500 hover:text-emerald-500'
+                        }`}
+                        title={tenant.status === 'active' ? 'Suspender' : 'Activar'}
+                      >
                         <Ban className="w-4 h-4" />
                       </button>
                     </div>
@@ -1537,9 +1946,141 @@ export default function AdminDashboardView({
     </div>
   );
 
+  const renderEditTenant = () => {
+    if (!editingTenant) return null;
+
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={() => setEditingTenant(null)}
+            className="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors text-xs font-bold uppercase tracking-widest"
+          >
+            <ArrowLeft className="w-4 h-4" /> Volver a Tenants
+          </button>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => {
+                onUpdateTenant?.(editingTenant.id, editingTenant);
+                setEditingTenant(null);
+              }}
+              className="flex items-center gap-2 px-8 py-3 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-primary/80 transition-all shadow-xl shadow-primary/30"
+            >
+              <Save className="w-4 h-4" /> Guardar Cambios
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <div className="bg-[#151921] border border-white/5 rounded-3xl p-8 space-y-8">
+              <h3 className="text-xl font-black text-white uppercase tracking-tight">Información de la Empresa</h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Nombre de Empresa</label>
+                  <input 
+                    type="text" 
+                    value={editingTenant.name}
+                    onChange={(e) => setEditingTenant({ ...editingTenant, name: e.target.value })}
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white font-bold focus:border-primary transition-colors outline-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Subdominio</label>
+                  <div className="flex items-center">
+                    <span className="bg-black/40 border border-r-0 border-white/10 rounded-l-xl px-4 py-3 text-slate-500 font-bold">https://</span>
+                    <input 
+                      type="text" 
+                      value={editingTenant.subdomain}
+                      onChange={(e) => setEditingTenant({ ...editingTenant, subdomain: e.target.value })}
+                      className="flex-1 bg-black/20 border border-white/10 rounded-r-xl px-4 py-3 text-white font-bold focus:border-primary transition-colors outline-none"
+                    />
+                    <span className="bg-black/40 border border-l-0 border-white/10 rounded-r-xl px-4 py-3 text-slate-500 font-bold">.techmarket.com</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Comisión (%)</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    value={editingTenant.commissionRate * 100}
+                    onChange={(e) => setEditingTenant({ ...editingTenant, commissionRate: parseFloat(e.target.value) / 100 })}
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white font-bold focus:border-primary transition-colors outline-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Costo de Suscripción (S/)</label>
+                  <input 
+                    type="number" 
+                    value={editingTenant.subscriptionFee}
+                    onChange={(e) => setEditingTenant({ ...editingTenant, subscriptionFee: parseFloat(e.target.value) })}
+                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white font-bold focus:border-primary transition-colors outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <div className="bg-[#151921] border border-white/5 rounded-3xl p-8 space-y-6">
+              <h3 className="text-xl font-black text-white uppercase tracking-tight">Estado y Ventas</h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-white/2 rounded-2xl border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full ${editingTenant.status === 'active' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                    <span className="text-sm font-bold text-white uppercase tracking-tight">
+                      {editingTenant.status === 'active' ? 'Activo' : 'Suspendido'}
+                    </span>
+                  </div>
+                  <button 
+                    onClick={() => setEditingTenant({ ...editingTenant, status: editingTenant.status === 'active' ? 'suspended' : 'active' })}
+                    className="text-[10px] font-black text-primary uppercase tracking-widest hover:underline"
+                  >
+                    Cambiar
+                  </button>
+                </div>
+
+                <div className="p-4 bg-white/2 rounded-2xl border border-white/5 space-y-1">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Ventas Totales</p>
+                  <p className="text-2xl font-black text-white tracking-tighter">S/ {editingTenant.sales.toLocaleString()}</p>
+                </div>
+
+                <div className="p-4 bg-white/2 rounded-2xl border border-white/5 space-y-1">
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Comisión Generada</p>
+                  <p className="text-2xl font-black text-emerald-500 tracking-tighter">S/ {(editingTenant.sales * editingTenant.commissionRate).toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="pt-6 border-t border-white/5">
+                <button 
+                  onClick={() => {
+                    if (window.confirm('¿Estás seguro de que deseas eliminar este tenant? Esta acción no se puede deshacer.')) {
+                      onDeleteTenant?.(editingTenant.id);
+                      setEditingTenant(null);
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-rose-500/10 border border-rose-500/20 text-rose-500 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-rose-500/20 transition-all"
+                >
+                  <Trash2 className="w-4 h-4" /> Eliminar Tenant
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderContent = () => {
     if (editingProduct) return renderEditProduct();
+    if (isAddingProduct) return renderAddProduct();
     if (editingBanner) return renderEditBanner();
+    if (editingTenant) return renderEditTenant();
     if (selectedReseller) return renderResellerDetails();
 
     switch (activeTab) {
@@ -1596,6 +2137,7 @@ export default function AdminDashboardView({
               onClick={() => {
                 setActiveTab(item.id);
                 setEditingProduct(null);
+                setIsAddingProduct(false);
                 setEditingBanner(null);
                 setSelectedReseller(null);
               }}

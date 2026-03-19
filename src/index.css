@@ -3,32 +3,60 @@
 
 @theme {
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #0f5af0;
-  --color-navy-dark: #0a192f;
-  --color-background-dark: #101622;
+  --color-primary: #3b82f6;
+  --color-navy-dark: #0f172a;
+  --color-background-dark: #121826;
+  --color-background-light: #f8fafc;
+  --color-text-dark: #f1f5f9;
+  --color-text-light: #0f172a;
 }
 
 @layer base {
-  body {
-    @apply bg-background-dark text-slate-100 font-sans;
-    cursor: none;
+  :root {
+    --bg-color: var(--color-background-dark);
+    --text-color: var(--color-text-dark);
+    --card-bg: rgba(30, 41, 59, 0.5);
+    --border-color: rgba(255, 255, 255, 0.1);
   }
 
-  a, button, [role="button"], input, select, textarea, label, .cursor-pointer {
-    cursor: none !important;
+  :root.light {
+    --bg-color: var(--color-background-light);
+    --text-color: var(--color-text-light);
+    --card-bg: rgba(255, 255, 255, 0.8);
+    --border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    @apply font-sans transition-colors duration-300;
   }
 }
 
 .glass-effect {
-  background: rgba(16, 22, 34, 0.85);
-  backdrop-filter: blur(4px);
-  border-bottom: 1px solid rgba(15, 90, 240, 0.1);
+  background: var(--bg-color);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+  @apply backdrop-blur-md;
 }
 
 .mega-menu-glass {
-  background: rgba(16, 22, 34, 0.98);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(15, 90, 240, 0.1);
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  @apply backdrop-blur-xl shadow-2xl;
+}
+
+.theme-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  @apply rounded-2xl transition-all duration-300;
+}
+
+.theme-gradient {
+  background: linear-gradient(to right, var(--bg-color) 30%, rgba(16, 22, 34, 0.6) 100%);
+}
+
+:root.light .theme-gradient {
+  background: linear-gradient(to right, var(--bg-color) 30%, rgba(248, 250, 252, 0.6) 100%);
 }
 
 .no-scrollbar::-webkit-scrollbar {

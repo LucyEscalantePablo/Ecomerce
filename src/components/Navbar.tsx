@@ -30,6 +30,7 @@ import {
   Wifi,
   Usb,
   Sun,
+  Moon,
   Camera,
   Gamepad2,
   Cast,
@@ -46,7 +47,8 @@ import {
   ChevronRight,
   Settings,
   LogOut,
-  ShieldAlert
+  ShieldAlert,
+  Handshake
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -58,15 +60,42 @@ interface NavbarProps {
   isReseller?: boolean;
   onLogout?: () => void;
   wishlistCount?: number;
+  cartItemCount?: number;
+  onSearch?: (query: string) => void;
+  searchQuery?: string;
+  theme: 'dark' | 'light';
+  onToggleTheme: () => void;
 }
 
-export default function Navbar({ onNavigate, currentView, currentCategory, isLoggedIn, isAdmin, isReseller, onLogout, wishlistCount = 0 }: NavbarProps) {
+export default function Navbar({ 
+  onNavigate, 
+  currentView, 
+  currentCategory, 
+  isLoggedIn, 
+  isAdmin, 
+  isReseller, 
+  onLogout, 
+  wishlistCount = 0, 
+  cartItemCount = 0,
+  onSearch,
+  searchQuery: externalSearchQuery = '',
+  theme,
+  onToggleTheme
+}: NavbarProps) {
   const [activeMenu, setActiveMenu] = useState<'components' | 'laptops' | 'peripherals' | 'monitors' | 'networking' | 'streaming' | 'accessories' | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(externalSearchQuery);
+
+  // Sync with external search query
+  React.useEffect(() => {
+    setSearchQuery(externalSearchQuery);
+  }, [externalSearchQuery]);
 
   const toggleMenu = (menu: 'components' | 'laptops' | 'peripherals' | 'monitors' | 'networking' | 'streaming' | 'accessories') => {
     setActiveMenu(activeMenu === menu ? null : menu);
+    setShowNotifications(false);
+    setShowProfileMenu(false);
   };
 
   const handleMegaMenuClick = (view: 'home' | 'catalog' | 'login' | 'register' | 'pc-builder', step?: number, category?: string) => {
@@ -83,48 +112,70 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
   const isAccessoryActive = currentView === 'catalog' && currentCategory && ['cable-video', 'cable-usb', 'adapter', 'ups'].includes(currentCategory);
 
   return (
-    <header className="sticky top-0 z-50 glass-effect border-b border-white/5">
-      {/* Global Backdrop for Mega Menus */}
-      {activeMenu && (
+    <header className="sticky top-0 z-[1000] bg-[var(--bg-color)] border-b border-white/5 transition-colors duration-300">
+      {/* Global Backdrop for Menus */}
+      {(activeMenu || showNotifications || showProfileMenu) && (
         <div 
-          className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[2px]" 
-          onClick={() => setActiveMenu(null)}
+          className="fixed inset-0 z-[100] bg-black/40" 
+          onClick={() => {
+            setActiveMenu(null);
+            setShowNotifications(false);
+            setShowProfileMenu(false);
+          }}
         />
       )}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-50">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-12 relative z-[120]">
         <div className="flex items-center justify-between h-20 gap-8">
           {/* Logo */}
           <div 
             className="flex items-center gap-3 shrink-0 cursor-pointer"
-            onClick={() => onNavigate('home')}
+            onClick={() => {
+              setActiveMenu(null);
+              onNavigate('home');
+            }}
           >
-            <div className="bg-primary p-2 rounded-xl shadow-lg shadow-primary/20">
+            <div className="bg-gradient-to-br from-blue-600 to-cyan-500 p-2 rounded-xl shadow-lg shadow-blue-500/20">
               <Memory className="text-white w-6 h-6" />
             </div>
-            <h1 className="text-xl font-black tracking-tighter text-white uppercase flex items-center gap-1">
-              TechMarket <span className="text-primary">Smart</span>
+            <h1 className="text-xl font-black tracking-tighter text-[var(--text-color)] uppercase flex items-center gap-1">
+              TechMarket <span className="text-blue-500">Smart</span>
             </h1>
           </div>
 
           {/* Search */}
           <div className="flex-1 max-w-md hidden md:block">
-            <div className="relative">
+            <form 
+              onSubmit={(e) => {
+                e.preventDefault();
+                setActiveMenu(null);
+                onSearch?.(searchQuery);
+              }}
+              className="relative"
+            >
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
                 <Search className="w-4 h-4" />
               </div>
               <input 
-                className="block w-full pl-9 pr-3 py-2 border-none rounded-lg bg-slate-800/60 text-slate-100 placeholder-slate-500 focus:ring-1 focus:ring-primary/40 text-xs transition-all" 
-                placeholder="Buscar componentes, laptops..." 
+                className="block w-full pl-9 pr-3 py-2 border-none rounded-lg bg-[var(--card-bg)] text-[var(--text-color)] placeholder-slate-500 focus:ring-1 focus:ring-primary/40 text-xs transition-all" 
+                placeholder="Buscar por nombre, marca, SKU o especificaciones..." 
                 type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  onSearch?.(e.target.value);
+                }}
               />
-            </div>
+            </form>
           </div>
 
           {/* Nav Links - Empty or for other links */}
           <nav className="hidden md:flex items-center gap-4 lg:gap-6 h-full">
             <button 
-              onClick={() => onNavigate('pc-builder')}
+              onClick={() => {
+                setActiveMenu(null);
+                onNavigate('pc-builder');
+              }}
               className={`text-[10px] font-black transition-all flex items-center gap-2 px-4 py-2 rounded-xl uppercase tracking-widest group ${
                 currentView === 'pc-builder' 
                   ? 'bg-primary text-white shadow-lg shadow-primary/30' 
@@ -136,11 +187,27 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
             </button>
           </nav>
 
-          {/* Actions */}
-          <div className="flex items-center gap-2 lg:gap-4 shrink-0">
+            {/* Actions */}
+          <div className="flex items-center gap-2 lg:gap-4 shrink-0 relative z-[200]">
             <div className="hidden md:flex items-center gap-1 pr-4 border-r border-white/10">
+              {/* Theme Toggle */}
               <button 
-                onClick={() => onNavigate('comparator')}
+                onClick={onToggleTheme}
+                className="p-2 transition-all rounded-xl text-slate-400 hover:text-primary hover:bg-white/5 group"
+                title={theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
+                ) : (
+                  <Moon className="w-4.5 h-4.5 group-hover:scale-110 transition-transform" />
+                )}
+              </button>
+
+              <button 
+                onClick={() => {
+                  setActiveMenu(null);
+                  onNavigate('comparator');
+                }}
                 className={`p-2 transition-colors group relative rounded-xl ${
                   currentView === 'comparator' ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-primary'
                 }`} 
@@ -150,6 +217,7 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
               </button>
               <button 
                 onClick={() => {
+                  setActiveMenu(null);
                   if (!isLoggedIn) {
                     onNavigate('login');
                   } else {
@@ -168,13 +236,15 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
                   </span>
                 )}
               </button>
-              <div className="relative">
+              <div className="relative z-[100]">
                 <button 
                   onClick={() => {
                     if (!isLoggedIn) {
                       onNavigate('login');
                     } else {
                       setShowNotifications(!showNotifications);
+                      setShowProfileMenu(false);
+                      setActiveMenu(null);
                     }
                   }}
                   className={`p-2 transition-colors group relative rounded-xl ${showNotifications ? 'bg-primary/10 text-primary' : 'text-slate-400 hover:text-primary'}`} 
@@ -185,11 +255,14 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
                 </button>
 
                 {showNotifications && isLoggedIn && (
-                  <div className="absolute top-full right-0 mt-2 w-64 bg-[#0B0E14] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
-                    <div className="p-4 border-b border-white/5 flex items-center justify-between bg-primary/5">
+                  <div 
+                    className="absolute top-full right-0 mt-2 w-64 border border-[var(--border-color)] rounded-2xl shadow-2xl z-[110] overflow-hidden"
+                    style={{ backgroundColor: 'var(--bg-color)', opacity: 1 }}
+                  >
+                    <div className="p-4 border-b border-[var(--border-color)] flex items-center justify-between" style={{ backgroundColor: 'var(--bg-color)' }}>
                       <div className="flex items-center gap-2">
                         <Bell className="w-4 h-4 text-primary" />
-                        <span className="text-sm font-black text-white uppercase tracking-tight">Mis Alertas</span>
+                        <span className="text-sm font-black text-[var(--text-color)] uppercase tracking-tight">Mis Alertas</span>
                       </div>
                       <ChevronDown className="w-4 h-4 text-slate-500" />
                     </div>
@@ -238,22 +311,29 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
 
             <div className="flex items-center gap-2 lg:gap-4">
               <button 
-                onClick={() => onNavigate('checkout')}
+                onClick={() => {
+                  setActiveMenu(null);
+                  onNavigate('checkout');
+                }}
                 className="p-2 text-slate-400 hover:text-white relative transition-all hover:bg-white/5 rounded-xl group"
               >
                 <ShoppingCart className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] text-white font-black shadow-lg shadow-primary/40 border-2 border-slate-900">
-                  2
-                </span>
+                {cartItemCount > 0 && (
+                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] text-white font-black shadow-lg shadow-primary/40 border-2 border-slate-900">
+                    {cartItemCount}
+                  </span>
+                )}
               </button>
               
-              <div className="relative">
+              <div className="relative z-[100]">
                 <button 
                   onClick={() => {
                     if (!isLoggedIn) {
                       onNavigate('login');
                     } else {
                       setShowProfileMenu(!showProfileMenu);
+                      setShowNotifications(false);
+                      setActiveMenu(null);
                     }
                   }}
                   className={`p-2 transition-all rounded-xl group flex items-center gap-2 ${
@@ -272,18 +352,34 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
                   <motion.div 
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    className="absolute top-full right-0 mt-2 w-56 bg-[#0B0E14] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+                    className="absolute top-full right-0 mt-2 w-56 border border-[var(--border-color)] rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,1)] z-[120] overflow-hidden"
+                    style={{ backgroundColor: 'var(--bg-color)', backdropFilter: 'none' }}
                   >
-                    <div className="p-4 border-b border-white/5 bg-white/2">
+                    <div className="p-4 border-b border-[var(--border-color)]" style={{ backgroundColor: 'var(--bg-color)' }}>
                       <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-1">Usuario</p>
-                      <p className="text-sm font-bold text-white truncate">{isAdmin ? 'Administrador' : 'Juan Pérez'}</p>
+                      <p className="text-sm font-bold text-[var(--text-color)] truncate">{isAdmin ? 'Administrador' : 'Juan Pérez'}</p>
                     </div>
                     
                     <div className="p-2">
+                      {!isReseller && !isAdmin && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onNavigate('reseller-request');
+                            setShowProfileMenu(false);
+                          }}
+                          className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-primary/10 hover:text-primary transition-colors group text-left"
+                        >
+                          <Handshake className="w-4 h-4" />
+                          <span className="text-sm font-bold">Solicitud de Socio</span>
+                        </button>
+                      )}
+
                       {isAdmin && (
                         <>
                           <button 
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               onNavigate('admin-dashboard');
                               setShowProfileMenu(false);
                             }}
@@ -293,7 +389,8 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
                             <span className="text-sm font-bold">Panel de Control</span>
                           </button>
                           <button 
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               onNavigate('super-admin');
                               setShowProfileMenu(false);
                             }}
@@ -307,7 +404,8 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
 
                       {isReseller && (
                         <button 
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             onNavigate('reseller-dashboard');
                             setShowProfileMenu(false);
                           }}
@@ -319,7 +417,8 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
                       )}
                       
                       <button 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           onNavigate('settings');
                           setShowProfileMenu(false);
                         }}
@@ -332,7 +431,8 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
                       <div className="h-px bg-white/5 my-2" />
                       
                       <button 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           onLogout?.();
                           setShowProfileMenu(false);
                         }}
@@ -351,26 +451,26 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
       </div>
 
       {/* Sub Nav */}
-      <div className="glass-effect border-t border-white/5 lg:overflow-visible">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between lg:overflow-visible">
+      <div className="glass-effect border-t border-white/5 lg:overflow-visible relative z-[110]">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-12 h-12 flex items-center justify-between lg:overflow-visible">
           <div className="flex items-center gap-8 overflow-x-auto lg:overflow-visible no-scrollbar whitespace-nowrap h-full">
             {/* Componentes Menu */}
             <div 
               className="relative h-full flex items-center group cursor-pointer"
               onClick={() => toggleMenu('components')}
             >
-              <a 
+              <div 
                 className={`text-[10px] font-black transition-colors flex items-center gap-1 h-full uppercase tracking-widest ${
                   isComponentActive || activeMenu === 'components' ? 'text-primary' : 'text-slate-300 hover:text-primary'
                 }`}
               >
                 COMPONENTES
                 <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${activeMenu === 'components' ? 'rotate-180' : ''}`} />
-              </a>
+              </div>
 
               {/* Mega Menu Componentes */}
               {activeMenu === 'components' && (
-                <div className="absolute top-full left-0 w-[95vw] lg:w-[700px] mt-0 pt-0 z-50" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute top-full left-0 w-[95vw] lg:w-[700px] mt-0 pt-0 z-[200]" onClick={(e) => e.stopPropagation()}>
                   <div className="mega-menu-glass rounded-b-2xl shadow-2xl overflow-hidden p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
                       <MegaMenuItem 
                         icon={<Cpu className="w-5 h-5" />} 
@@ -425,18 +525,18 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
               className="relative h-full flex items-center group cursor-pointer"
               onClick={() => toggleMenu('laptops')}
             >
-              <a 
+              <div 
                 className={`text-[10px] font-black transition-colors flex items-center gap-1 h-full uppercase tracking-widest ${
                   isLaptopActive || activeMenu === 'laptops' ? 'text-primary' : 'text-slate-300 hover:text-primary'
                 }`}
               >
                 LAPTOPS Y COMPUTADORAS
                 <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${activeMenu === 'laptops' ? 'rotate-180' : ''}`} />
-              </a>
+              </div>
 
               {/* Mega Menu Laptops */}
               {activeMenu === 'laptops' && (
-                <div className="absolute top-full left-0 w-[95vw] lg:w-[700px] mt-0 pt-0 z-50" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute top-full left-0 w-[95vw] lg:w-[700px] mt-0 pt-0 z-[200]" onClick={(e) => e.stopPropagation()}>
                   <div className="mega-menu-glass rounded-b-2xl shadow-2xl overflow-hidden p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
                       <MegaMenuItem 
                         icon={<Laptop className="w-5 h-5" />} 
@@ -489,7 +589,7 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
 
               {/* Mega Menu Periféricos */}
               {activeMenu === 'peripherals' && (
-                <div className="absolute top-full left-0 w-[95vw] lg:w-[700px] mt-0 pt-0 z-50" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute top-full left-0 w-[95vw] lg:w-[700px] mt-0 pt-0 z-[200]" onClick={(e) => e.stopPropagation()}>
                   <div className="mega-menu-glass rounded-b-2xl shadow-2xl overflow-hidden p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
                       <MegaMenuItem 
                         icon={<Keyboard className="w-5 h-5" />} 
@@ -554,7 +654,7 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
 
               {/* Mega Menu Monitores */}
               {activeMenu === 'monitors' && (
-                <div className="absolute top-full left-0 w-[95vw] lg:w-[700px] mt-0 pt-0 z-50" onClick={(e) => e.stopPropagation()}>
+                <div className="absolute top-full left-0 w-[95vw] lg:w-[700px] mt-0 pt-0 z-[200]" onClick={(e) => e.stopPropagation()}>
                   <div className="mega-menu-glass rounded-b-2xl shadow-2xl overflow-hidden p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
                       <MegaMenuItem 
                         icon={<Monitor className="w-5 h-5" />} 
@@ -601,7 +701,7 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
 
             {/* Mega Menu Networking */}
             {activeMenu === 'networking' && (
-              <div className="absolute top-full right-0 w-[95vw] lg:w-[700px] mt-0 pt-0 z-50" onClick={(e) => e.stopPropagation()}>
+              <div className="absolute top-full right-0 w-[95vw] lg:w-[700px] mt-0 pt-0 z-[200]" onClick={(e) => e.stopPropagation()}>
                 <div className="mega-menu-glass rounded-b-2xl shadow-2xl overflow-hidden p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
                     <MegaMenuItem 
                       icon={<Router className="w-5 h-5" />} 
@@ -648,7 +748,7 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
 
             {/* Mega Menu Streaming */}
             {activeMenu === 'streaming' && (
-              <div className="absolute top-full right-0 w-[95vw] lg:w-[700px] mt-0 pt-0 z-50" onClick={(e) => e.stopPropagation()}>
+              <div className="absolute top-full right-0 w-[95vw] lg:w-[700px] mt-0 pt-0 z-[200]" onClick={(e) => e.stopPropagation()}>
                 <div className="mega-menu-glass rounded-b-2xl shadow-2xl overflow-hidden p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
                     <MegaMenuItem 
                       icon={<Sun className="w-5 h-5" />} 
@@ -701,7 +801,7 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
 
             {/* Mega Menu Accesorios */}
             {activeMenu === 'accessories' && (
-              <div className="absolute top-full left-0 lg:right-0 lg:left-auto w-[95vw] lg:w-[700px] mt-0 pt-0 z-50" onClick={(e) => e.stopPropagation()}>
+              <div className="absolute top-full left-0 lg:right-0 lg:left-auto w-[95vw] lg:w-[700px] mt-0 pt-0 z-[200]" onClick={(e) => e.stopPropagation()}>
                 <div className="mega-menu-glass rounded-b-2xl shadow-2xl overflow-hidden p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2">
                     <MegaMenuItem 
                       icon={<Cable className="w-5 h-5" />} 
@@ -734,12 +834,13 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
 
           </div>
           
-          <div className="flex items-center gap-4 shrink-0 h-full ml-auto relative z-[60]">
+          <div className="flex items-center gap-4 shrink-0 h-full ml-auto relative z-[10]">
             <button 
               type="button"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
+                setActiveMenu(null);
                 onNavigate('reseller-request');
               }}
               className="hidden sm:flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-white uppercase tracking-widest transition-colors px-4 h-full border-x border-white/5 cursor-pointer relative z-[70]"
@@ -748,7 +849,10 @@ export default function Navbar({ onNavigate, currentView, currentCategory, isLog
             </button>
             <span className="h-6 w-px bg-slate-700 hidden sm:block"></span>
             <button 
-              onClick={() => onNavigate('catalog', undefined, 'offers')}
+              onClick={() => {
+                setActiveMenu(null);
+                onNavigate('catalog', undefined, 'offers');
+              }}
               className="flex items-center gap-2 px-5 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl text-[10px] font-black transition-all shadow-lg shadow-primary/30 uppercase tracking-widest group hover:scale-105 active:scale-95" 
             >
               <Bolt className="w-4 h-4 animate-pulse" /> 
