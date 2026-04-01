@@ -52,7 +52,7 @@ export default function CartRecoveryView({ onNavigate }: CartRecoveryViewProps) 
               </div>
             </div>
             <div className="w-48 h-48 rounded-3xl overflow-hidden border-4 border-white/20 shrink-0 rotate-3 shadow-2xl">
-              <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400&h=400" alt="Lisi" className="w-full h-full object-cover" />
+              <img src="/images/products/peripherals.png" alt="Lisi" className="w-full h-full object-cover" />
             </div>
           </div>
           <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-3xl rounded-full -mr-48 -mt-48"></div>
@@ -90,7 +90,7 @@ export default function CartRecoveryView({ onNavigate }: CartRecoveryViewProps) 
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 bg-[#0B0E14] rounded-xl overflow-hidden shrink-0 border border-white/5">
                     <img 
-                      src={`https://picsum.photos/seed/${item.id}/200/200`} 
+                      src={`/images/products/${item.category === 'PROCESADOR' ? 'cpu' : item.category === 'TARJETA GRÁFICA' ? 'gpu' : 'peripherals'}.png`} 
                       alt={item.name} 
                       className="w-full h-full object-cover opacity-50 group-hover:opacity-100 transition-opacity" 
                     />

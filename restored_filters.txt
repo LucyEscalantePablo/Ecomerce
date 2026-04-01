@@ -1,0 +1,159 @@
+const filterDefinitions: Record<string, any[]> = {
+  cpu: [
+    { id: 'brand', label: 'Marca', type: 'checkbox', options: ['Intel', 'AMD'] },
+    { id: 'socket', label: 'Socket', type: 'checkbox', options: ['LGA 1700', 'AM5', 'AM4'] },
+    { id: 'cores', label: 'N+圭leos', type: 'checkbox', options: ['6', '8', '12', '16', '20', '24'] },
+    { id: 'tdp', label: 'CONSUMO (TDP)', type: 'select', options: ['Cualquier consumo', 'Bajo (<100W)', 'Medio (100-150W)', 'Alto (>150W)'] },
+  ],
+  gpu: [
+    { id: 'vram', label: 'VRAM (GB)', type: 'checkbox', options: ['8GB', '12GB', '16GB', '24GB'] },
+    { id: 'series', label: 'SERIE', type: 'checkbox', options: ['RTX 40 Series', 'RTX 30 Series', 'RX 7000 Series'] },
+    { id: 'tdp', label: 'CONSUMO (TDP)', type: 'select', options: ['Cualquier consumo', 'Bajo (<200W)', 'Medio (200-300W)', 'Alto (>300W)'] },
+  ],
+  ram: [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['DDR4', 'DDR5'] },
+    { id: 'capacity', label: 'Capacidad', type: 'checkbox', options: ['16GB', '32GB', '64GB'] },
+    { id: 'speed', label: 'Velocidad', type: 'checkbox', options: ['3200MHz', '3600MHz', '5200MHz', '6000MHz', '6400MHz'] },
+  ],
+  motherboard: [
+    { id: 'socket', label: 'Socket', type: 'checkbox', options: ['LGA 1700', 'AM5', 'AM4'] },
+    { id: 'format', label: 'Formato', type: 'checkbox', options: ['ATX', 'Micro-ATX', 'Mini-ITX'] },
+  ],
+  storage: [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['SSD', 'HDD'] },
+    { id: 'capacity', label: 'Capacidad', type: 'checkbox', options: ['500GB', '1TB', '2TB', '4TB'] },
+  ],
+  psu: [
+    { id: 'wattage', label: 'Potencia', type: 'checkbox', options: ['500W', '650W', '750W', '850W', '1000W+'] },
+    { id: 'cert', label: 'Certificaci+好', type: 'checkbox', options: ['80 Plus Bronze', '80 Plus Gold', '80 Plus Platinum'] },
+  ],
+  case: [
+    { id: 'format', label: 'Formato', type: 'checkbox', options: ['Mid Tower', 'Full Tower', 'Mini Tower'] },
+    { id: 'color', label: 'Color', type: 'checkbox', options: ['Negro', 'Blanco'] },
+  ],
+  'cooling': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['L+〈uida AIO', 'Aire'] },
+    { id: 'size', label: 'Tama+她', type: 'checkbox', options: ['120mm', '240mm', '280mm', '360mm'] },
+  ],
+  'laptop': [
+    { id: 'brand', label: 'Marca', type: 'checkbox', options: ['Apple', 'ASUS', 'MSI', 'HP', 'Lenovo', 'Razer'] },
+    { id: 'gpu', label: 'Gr+璗icos', type: 'checkbox', options: ['RTX 4050', 'RTX 4060', 'RTX 4070', 'RTX 4080', 'RTX 4090', 'M3 Max'] },
+  ],
+  'peripherals': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['Teclados', 'Mouse', 'Headsets', 'Webcams'] },
+    { id: 'brand', label: 'Marca', type: 'checkbox', options: ['Logitech', 'Razer', 'Corsair', 'SteelSeries'] },
+  ],
+  'monitor': [
+    { id: 'res', label: 'Resoluci+好', type: 'checkbox', options: ['1080p', '1440p', '4K', 'Ultrawide'] },
+    { id: 'hz', label: 'Refresh Rate', type: 'checkbox', options: ['60Hz', '144Hz', '165Hz', '240Hz', '360Hz'] },
+  ],
+  'networking': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['Routers', 'Switches', 'NICs', 'Hubs'] },
+    { id: 'brand', label: 'Marca', type: 'checkbox', options: ['TP-Link', 'ASUS', 'D-Link', 'Ubiquiti'] },
+  ],
+  'streaming': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['Iluminaci+好', 'C+璥aras', 'Capturadoras', 'Stream Decks'] },
+  ],
+  'accessories': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['Cables', 'Adaptadores', 'UPS', 'Regletas'] },
+  ],
+  'laptop-gaming': [
+    { id: 'brand', label: 'Marca', type: 'checkbox', options: ['Apple', 'ASUS', 'MSI', 'HP', 'Lenovo', 'Razer'] },
+    { id: 'gpu', label: 'Gr+璗icos', type: 'checkbox', options: ['RTX 4050', 'RTX 4060', 'RTX 4070', 'RTX 4080', 'RTX 4090', 'M3 Max'] },
+    { id: 'screen', label: 'Pantalla', type: 'checkbox', options: ['14"', '15.6"', '16"', '17.3"'] },
+  ],
+  'laptop-pro': [
+    { id: 'brand', label: 'Marca', type: 'checkbox', options: ['Apple', 'Dell', 'HP', 'Lenovo'] },
+    { id: 'cpu', label: 'Procesador', type: 'checkbox', options: ['M3 Pro', 'M3 Max', 'Core i7', 'Core i9'] },
+  ],
+  'laptop-student': [
+    { id: 'brand', label: 'Marca', type: 'checkbox', options: ['HP', 'Lenovo', 'ASUS', 'Acer'] },
+    { id: 'price_range', label: 'Rango de Precio', type: 'select', options: ['Econ+妃ica (<2000)', 'Media (2000-3500)'] },
+  ],
+  'pc-prebuilt': [
+    { id: 'type', label: 'Uso', type: 'checkbox', options: ['Gaming', 'Oficina', 'Workstation'] },
+  ],
+  'pc-aio': [
+    { id: 'brand', label: 'Marca', type: 'checkbox', options: ['HP', 'Lenovo', 'Apple'] },
+  ],
+  'keyboard': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['Mec+璯ico', 'Membrana', '+皫tico'] },
+    { id: 'format', label: 'Formato', type: 'checkbox', options: ['Full Size', 'TKL (80%)', '60%', '65%'] },
+    { id: 'switch', label: 'Switch', type: 'checkbox', options: ['Blue', 'Red', 'Brown', 'Silent'] },
+  ],
+  'mouse': [
+    { id: 'type', label: 'Conexi+好', type: 'checkbox', options: ['Inal+璥brico', 'Cableado'] },
+    { id: 'brand', label: 'Marca', type: 'checkbox', options: ['Logitech', 'Razer', 'SteelSeries', 'Corsair'] },
+  ],
+  'headset': [
+    { id: 'type', label: 'Conexi+好', type: 'checkbox', options: ['Inal+璥brico', 'Cableado', 'Bluetooth'] },
+    { id: 'brand', label: 'Marca', type: 'checkbox', options: ['HyperX', 'Logitech', 'SteelSeries', 'Razer'] },
+  ],
+  'webcam': [
+    { id: 'res', label: 'Resoluci+好', type: 'checkbox', options: ['720p', '1080p', '4K'] },
+  ],
+  'mic': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['USB', 'XLR'] },
+  ],
+  'mousepad': [
+    { id: 'size', label: 'Tama+她', type: 'checkbox', options: ['S', 'M', 'L', 'XL', 'XXL'] },
+  ],
+  'chair': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['Gaming', 'Ergon+妃ica'] },
+  ],
+  'monitor-use': [
+    { id: 'res', label: 'Resoluci+好', type: 'checkbox', options: ['1080p', '1440p', '4K', 'Ultrawide'] },
+    { id: 'hz', label: 'Refresh Rate', type: 'checkbox', options: ['60Hz', '144Hz', '165Hz', '240Hz', '360Hz'] },
+    { id: 'panel', label: 'Panel', type: 'checkbox', options: ['IPS', 'VA', 'TN', 'OLED'] },
+  ],
+  'nic': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['PCIe', 'USB'] },
+  ],
+  'hub': [
+    { id: 'type', label: 'Conexi+好', type: 'checkbox', options: ['USB-C', 'USB 3.0'] },
+  ],
+  'greenscreen': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['Plegable', 'Fijo'] },
+  ],
+  'capture': [
+    { id: 'res', label: 'Resoluci+好', type: 'checkbox', options: ['1080p60', '4K60'] },
+  ],
+  'streamdeck': [
+    { id: 'keys', label: 'Teclas', type: 'checkbox', options: ['6', '15', '32'] },
+  ],
+  'camera': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['Mirrorless', 'DSLR'] },
+  ],
+  'cable-usb': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['USB-C', 'Micro USB', 'Lightning'] },
+  ],
+  'adapter': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['Video', 'Audio', 'Datos'] },
+  ],
+  'ups': [
+    { id: 'power', label: 'Potencia', type: 'checkbox', options: ['500VA', '750VA', '1000VA', '1500VA'] },
+  ],
+  'monitor-res': [
+    { id: 'res', label: 'Resoluci+好', type: 'checkbox', options: ['1080p', '1440p', '4K', 'Ultrawide'] },
+  ],
+  'monitor-hz': [
+    { id: 'hz', label: 'Refresh Rate', type: 'checkbox', options: ['144Hz', '165Hz', '240Hz', '360Hz'] },
+  ],
+  'monitor-panel': [
+    { id: 'panel', label: 'Panel', type: 'checkbox', options: ['IPS', 'VA', 'TN', 'OLED'] },
+  ],
+  'router': [
+    { id: 'brand', label: 'Marca', type: 'checkbox', options: ['TP-Link', 'ASUS', 'D-Link', 'Ubiquiti'] },
+    { id: 'wifi', label: 'Wi-Fi', type: 'checkbox', options: ['Wi-Fi 5', 'Wi-Fi 6', 'Wi-Fi 6E', 'Wi-Fi 7'] },
+  ],
+  'switch': [
+    { id: 'ports', label: 'Puertos', type: 'checkbox', options: ['5', '8', '16', '24', '48'] },
+  ],
+  'lighting': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['LED Strip', 'Ring Light', 'Panel RGB'] },
+  ],
+  'cable-video': [
+    { id: 'type', label: 'Tipo', type: 'checkbox', options: ['HDMI', 'DisplayPort'] },
+    { id: 'length', label: 'Longitud', type: 'checkbox', options: ['1m', '2m', '3m', '5m'] },
+  ],
+};

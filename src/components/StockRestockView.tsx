@@ -12,7 +12,7 @@ export default function StockRestockView({ onNavigate }: StockRestockViewProps) 
       id: 407,
       name: "NVIDIA GeForce RTX 4070 Super 12GB",
       price: 3249,
-      image: "https://images.unsplash.com/photo-1591489378430-ef2f4c626b35?auto=format&fit=crop&q=80&w=400&h=400&sig=gpu7",
+      image: "/images/products/gpu.png",
       time: "Vuelto hoy",
       stock: "¡Solo quedan 2!",
       status: "STOCK DISPONIBLE"
@@ -21,7 +21,7 @@ export default function StockRestockView({ onNavigate }: StockRestockViewProps) 
       id: 102,
       name: "Procesador AMD Ryzen 7 7800X3D",
       price: 1850,
-      image: "https://images.unsplash.com/photo-1555617766-c94804975da3?auto=format&fit=crop&q=80&w=400&h=400&sig=cpu2",
+      image: "/images/products/cpu.png",
       time: "Hace 1 hora",
       stock: "15+ unidades disponibles",
       status: "STOCK DISPONIBLE"
@@ -30,7 +30,7 @@ export default function StockRestockView({ onNavigate }: StockRestockViewProps) 
       id: 301,
       name: "Memoria RAM Corsair Vengeance 32GB DDR5",
       price: 480,
-      image: "https://images.unsplash.com/photo-1541029071515-84cc54f84dc5?auto=format&fit=crop&q=80&w=400&h=400&sig=ram1",
+      image: "/images/products/cpu.png",
       time: "Estimado: 2 días",
       stock: "En camino al almacén",
       status: "PRÓXIMAMENTE",
@@ -51,7 +51,7 @@ export default function StockRestockView({ onNavigate }: StockRestockViewProps) 
         <div className="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/20 rounded-3xl p-8 relative overflow-hidden">
           <div className="flex items-center gap-6 relative z-10">
             <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary/30 shrink-0">
-              <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200" alt="Lisi" className="w-full h-full object-cover" />
+              <img src="/images/products/peripherals.png" alt="Lisi" className="w-full h-full object-cover" />
             </div>
             <div className="space-y-2">
               <span className="bg-primary text-white text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-wider">Asistente Lisi</span>

@@ -142,7 +142,15 @@ export default function PCBuilder({ onNavigate, initialStep, onProductClick, onA
     // Basic filtering logic
     for (const [key, value] of Object.entries(activeFilters)) {
       if (Array.isArray(value) && value.length > 0) {
-        if (!value.includes(product[key])) return false;
+        const productValue = product[key];
+        if (productValue === undefined || productValue === null) return false;
+        
+        const val = String(productValue).toLowerCase();
+        const exists = value.some(opt => {
+          const option = String(opt).toLowerCase();
+          return val === option || val.includes(option) || option.includes(val);
+        });
+        if (!exists) return false;
       }
     }
     if (product.price < priceRange[0] || product.price > priceRange[1]) return false;
@@ -153,8 +161,10 @@ export default function PCBuilder({ onNavigate, initialStep, onProductClick, onA
   const toggleFilter = (filterId: string, option: string) => {
     setActiveFilters(prev => {
       const current = prev[filterId] || [];
-      const next = current.includes(option)
-        ? current.filter((o: string) => o !== option)
+      const exists = current.some((o: string) => o.toLowerCase() === option.toLowerCase());
+      
+      const next = exists
+        ? current.filter((o: string) => o.toLowerCase() !== option.toLowerCase())
         : [...current, option];
       return { ...prev, [filterId]: next };
     });

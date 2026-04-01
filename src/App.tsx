@@ -46,6 +46,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [cart, setCart] = useState<any[]>([]);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [adminInitialState, setAdminInitialState] = useState<any>(null);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -227,7 +228,25 @@ export default function App() {
       case 'home':
         return <HomeView onNavigate={handleNavigate} onProductClick={setSelectedProduct} onAddToCart={addToCart} />;
       case 'catalog':
-        return <CatalogView category={catalogCategory} onProductClick={setSelectedProduct} wishlist={wishlist} onToggleWishlist={toggleWishlist} isLoggedIn={isLoggedIn} isReseller={isReseller} resellerCategories={resellerCategories} searchQuery={searchQuery} onClearSearch={() => setSearchQuery('')} onAddToCart={addToCart} />;
+        return (
+          <CatalogView 
+            category={catalogCategory} 
+            onProductClick={setSelectedProduct} 
+            wishlist={wishlist} 
+            onToggleWishlist={toggleWishlist} 
+            isLoggedIn={isLoggedIn} 
+            isAdmin={isAdmin}
+            isReseller={isReseller} 
+            resellerCategories={resellerCategories} 
+            searchQuery={searchQuery} 
+            onClearSearch={() => setSearchQuery('')} 
+            onAddToCart={addToCart}
+            onAdminAction={(tab, state) => {
+              setAdminInitialState(state);
+              handleNavigate('admin-dashboard');
+            }}
+          />
+        );
       case 'pc-builder':
         return <PCBuilder onNavigate={handleNavigate} initialStep={builderStep} onProductClick={setSelectedProduct} onAddToCart={addToCart} />;
       case 'login':
@@ -268,6 +287,8 @@ export default function App() {
             onUpdateTenant={handleUpdateTenant}
             onToggleTenantStatus={handleToggleTenantStatus}
             onDeleteTenant={handleDeleteTenant}
+            initialState={adminInitialState}
+            onClearInitialState={() => setAdminInitialState(null)}
           />
         );
       case 'reseller-request':
@@ -285,6 +306,8 @@ export default function App() {
             onUpdateTenant={handleUpdateTenant}
             onToggleTenantStatus={handleToggleTenantStatus}
             onDeleteTenant={handleDeleteTenant}
+            initialState={adminInitialState}
+            onClearInitialState={() => setAdminInitialState(null)}
           />
         );
       case 'comparator':

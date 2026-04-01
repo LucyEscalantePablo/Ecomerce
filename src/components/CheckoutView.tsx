@@ -15,6 +15,7 @@ import {
   Wallet,
   Building2
 } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface CheckoutViewProps {
   onNavigate: (view: any) => void;
@@ -55,24 +56,117 @@ export default function CheckoutView({ onNavigate, cart, updateQuantity, removeF
   const validateStep2 = () => {
     const newErrors: Record<string, string> = {};
     if (paymentMethod === 'card') {
-      if (!formData.cardNumber.trim()) newErrors.cardNumber = 'Número de tarjeta obligatorio';
-      if (!formData.expiry.trim()) newErrors.expiry = 'Expiración obligatoria';
-      if (!formData.cvv.trim()) newErrors.cvv = 'CVV obligatorio';
+      const cleanCard = formData.cardNumber.replace(/\s/g, '');
+      if (!cleanCard) {
+        newErrors.cardNumber = 'Número de tarjeta obligatorio';
+      } else if (!/^\d{16}$/.test(cleanCard)) {
+        newErrors.cardNumber = 'Debe tener 16 dígitos';
+      }
+
+      if (!formData.expiry.trim()) {
+        newErrors.expiry = 'Expiración obligatoria';
+      } else if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(formData.expiry)) {
+        newErrors.expiry = 'Formato MM/YY inválido';
+      } else {
+        // Validate date is in the future
+        const [m, y] = formData.expiry.split('/').map(Number);
+        const now = new Date();
+        const expDate = new Date(2000 + y, m - 1);
+        if (expDate < new Date(now.getFullYear(), now.getMonth())) {
+          newErrors.expiry = 'Tarjeta expirada';
+        }
+      }
+
+      const cleanCvv = formData.cvv.trim();
+      if (!cleanCvv) {
+        newErrors.cvv = 'CVV obligatorio';
+      } else if (!/^\d{3,4}$/.test(cleanCvv)) {
+        newErrors.cvv = 'Debe tener 3 o 4 dígitos';
+      }
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNext = () => {
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [orderId, setOrderId] = useState('#TM-849201');
+
+  const handleNext = async () => {
     if (step === 1) {
       if (validateStep1()) setStep(2);
     } else if (step === 2) {
-      if (validateStep2()) setStep(3);
+      if (validateStep2()) {
+        try {
+          setIsProcessing(true);
+          const subtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+          
+          const { data: orderData, error: orderError } = await supabase.from('orders').insert({
+            client_name: formData.fullName,
+            client_email: formData.email,
+            client_address: formData.address,
+            client_city: formData.district,
+            client_phone: formData.phone,
+            total_amount: subtotal,
+            status: 'Procesando'
+          }).select().single();
+
+          if (orderError) throw orderError;
+          
+          setOrderId(`#TM-${orderData.id.split('-')[0].toUpperCase()}`);
+
+          if (cart.length > 0) {
+            const orderItems = cart.map(item => ({
+              order_id: orderData.id,
+              product_id: typeof item.id === 'number' || (typeof item.id === 'string' && item.id.length > 0) ? item.id : null,
+              quantity: item.quantity,
+              price_at_time: item.price
+            })).filter(item => item.product_id !== null);
+            
+            if (orderItems.length > 0) {
+              await supabase.from('order_items').insert(orderItems);
+            }
+          }
+          
+          setStep(3);
+        } catch (error) {
+          console.error("Error al procesar la orden:", error);
+          alert("Hubo un error al procesar tu orden. Por favor intenta de nuevo.");
+        } finally {
+          setIsProcessing(false);
+        }
+      }
     }
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    let formattedValue = value;
+
+    // Card Number Masking (0000 0000 0000 0000)
+    if (field === 'cardNumber') {
+      const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+      const parts = [];
+      for (let i = 0; i < v.length && i < 16; i += 4) {
+        parts.push(v.substring(i, i + 4));
+      }
+      formattedValue = parts.length > 0 ? parts.join(' ') : v;
+    }
+
+    // Expiry Masking (MM/YY)
+    if (field === 'expiry') {
+      const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+      if (v.length >= 2) {
+        formattedValue = v.substring(0, 2) + '/' + v.substring(2, 4);
+      } else {
+        formattedValue = v;
+      }
+    }
+
+    // CVV Masking (max 4 digits)
+    if (field === 'cvv') {
+      formattedValue = value.replace(/[^0-9]/gi, '').substring(0, 4);
+    }
+
+    setFormData(prev => ({ ...prev, [field]: formattedValue }));
     if (errors[field]) {
       setErrors(prev => {
         const newErrors = { ...prev };
@@ -321,9 +415,10 @@ export default function CheckoutView({ onNavigate, cart, updateQuantity, removeF
                 </button>
                 <button 
                   onClick={handleNext}
-                  className="flex-[2] py-6 bg-primary hover:bg-primary/90 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/40 transition-all active:scale-[0.98]"
+                  disabled={isProcessing}
+                  className="flex-[2] py-6 bg-primary hover:bg-primary/90 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-primary/40 transition-all active:scale-[0.98] disabled:opacity-50"
                 >
-                  Pagar S/ {total.toLocaleString('en-US', { minimumFractionDigits: 2 })} Ahora
+                  {isProcessing ? 'Procesando...' : `Pagar S/ ${total.toLocaleString('en-US', { minimumFractionDigits: 2 })} Ahora`}
                 </button>
               </div>
             </motion.section>
@@ -344,7 +439,7 @@ export default function CheckoutView({ onNavigate, cart, updateQuantity, removeF
               </div>
               <div className="bg-slate-900/50 rounded-2xl p-6 inline-block">
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Número de Pedido</p>
-                <p className="text-xl font-black text-white tracking-widest">#TM-849201</p>
+                <p className="text-xl font-black text-white tracking-widest">{orderId}</p>
               </div>
               <div className="pt-4">
                 <button 

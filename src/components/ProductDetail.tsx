@@ -22,22 +22,105 @@ interface ProductDetailProps {
 }
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onToggleWishlist, isWishlisted, onAddToCart }) => {
-  const [activeImage, setActiveImage] = useState(product.image);
+  const [activeImage, setActiveImage] = useState(product.image_url || product.image);
+
+  // Sync active image when product changes
+  React.useEffect(() => {
+    setActiveImage(product.image_url || product.image);
+  }, [product.image_url, product.image]);
 
   // Mocking some data if missing
   const model = product.model || `GA402XY-${product.id}`;
   const sku = product.sku || `TM-${49000 + product.id}`;
   const description = product.description || `La ${product.name} es una de las más potentes del mundo. Con componentes de última generación, diseñada para creadores y gamers que no aceptan compromisos.`;
-  const stockUnits = product.stockUnits || 5;
-  
-  const specs = [
-    { icon: Cpu, label: 'PROCESADOR', value: product.specs?.split('•')[0] || 'AMD Ryzen 9 7940HS' },
-    { icon: Monitor, label: 'GRÁFICOS', value: product.tags?.find((t: string) => t.includes('RTX') || t.includes('RX')) || 'RTX 4090 16GB VRAM' },
-    { icon: Layers, label: 'MEMORIA RAM', value: product.capacity || '32GB DDR5 4800MHz' },
-    { icon: HardDrive, label: 'ALMACENAMIENTO', value: product.interface || '1TB SSD NVMe Gen4' },
-  ];
+  const stockUnits = product.stock || 0;
 
-  const techSpecs = [
+  // Keys to exclude from the specs table (they are shown elsewhere)
+  const EXCLUDED_SPEC_KEYS = ['description', 'name', 'image', 'image_url', 'stock', 'price', 'sku', 'id'];
+
+  // Parse specs robustly: handles both {key: value} objects and [{key, value}] arrays
+  const specEntries: { label: string; value: string }[] = (() => {
+    let raw = product.specs;
+    if (!raw) return [];
+
+    // Log internally for safety
+    console.log("Raw specs in ProductDetail:", raw);
+
+    let parsed = raw;
+    if (typeof raw === 'string') {
+      try {
+        parsed = JSON.parse(raw);
+      } catch (e) {
+        return [{ label: 'Especificación', value: raw }];
+      }
+    }
+
+    // If it's an Array of {key, value} objects (from admin modal state mapped)
+    if (Array.isArray(parsed)) {
+      if (parsed.length > 0 && parsed[0].key !== undefined) {
+        return parsed
+          .filter((s: any) => s.key && !EXCLUDED_SPEC_KEYS.includes(s.key.toLowerCase()))
+          .map((s: any) => ({ label: s.key, value: String(s.value || '') }));
+      }
+      // If it's an array of strings like ["Audio: Codec...", "Socket: AM4"]
+      if (parsed.length > 0 && typeof parsed[0] === 'string') {
+        return parsed.map((s: string, i: number) => ({ label: `Espec ${i+1}`, value: s }));
+      }
+      // If it's an array of arrays like [["Audio", "Codec..."]]
+      if (parsed.length > 0 && Array.isArray(parsed[0])) {
+        return parsed.map((s: any[]) => ({ label: String(s[0]), value: String(s[1] || '') }));
+      }
+      return [];
+    }
+
+    // If it's a Plain object {key: value} (from Supabase JSONB map)
+    if (typeof parsed === 'object' && parsed !== null) {
+      const entries = Object.entries(parsed)
+        .filter(([key]) => !EXCLUDED_SPEC_KEYS.includes(key.toLowerCase()))
+        .map(([key, val]) => ({ label: key, value: String(val) }));
+      
+      if (entries.length > 0) return entries;
+    }
+
+    // Last fallback: string representation of whatever it is
+    return [{ label: 'Detalles', value: typeof parsed === 'object' ? JSON.stringify(parsed) : String(parsed) }];
+  })();
+  
+  const getSpecValue = (keywords: string[]) => {
+    // Check in product.specs object first
+    const entry = specEntries.find(s => keywords.some(k => s.label.toLowerCase().includes(k.toLowerCase())));
+    if (entry) return entry.value;
+    
+    // Check directly on product object (in case it was flattened)
+    for (const key of Object.keys(product)) {
+      if (keywords.some(k => key.toLowerCase() === k.toLowerCase())) {
+        return String(product[key]);
+      }
+    }
+    
+    // Partial match on direct properties
+    for (const key of Object.keys(product)) {
+      if (keywords.some(k => key.toLowerCase().includes(k.toLowerCase()))) {
+        if (typeof product[key] === 'string' || typeof product[key] === 'number') {
+          if (EXCLUDED_SPEC_KEYS.some(ex => key.toLowerCase().includes(ex))) continue;
+          return String(product[key]);
+        }
+      }
+    }
+    return null;
+  };
+
+  // Assign an icon to a spec based on its label keywords
+  const getSpecIcon = (label: string) => {
+    const l = label.toLowerCase();
+    if (l.includes('procesador') || l.includes('cpu') || l.includes('socket') || l.includes('núcleos') || l.includes('nucleos')) return Cpu;
+    if (l.includes('gráfico') || l.includes('gpu') || l.includes('video') || l.includes('chipset') || l.includes('vram')) return Monitor;
+    if (l.includes('memoria') || l.includes('ram') || l.includes('memory')) return Layers;
+    if (l.includes('almacen') || l.includes('disco') || l.includes('ssd') || l.includes('hdd') || l.includes('storage') || l.includes('capacidad')) return HardDrive;
+    return Layers; // default
+  };
+
+  const techSpecs = specEntries.length > 0 ? specEntries : [
     { label: 'Pantalla', value: '14" QHD+ (2560 x 1600) 165Hz, 3ms, ROG Nebula Display' },
     { label: 'Sistema Operativo', value: 'Windows 11 Pro' },
     { label: 'Batería', value: '76WHrs, 4S1P, 4 celdas Li-ion' },
@@ -46,13 +129,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onToggle
     { label: 'Peso', value: '1.72 Kg (3.79 lbs)' },
   ];
 
-  const galleryImages = product.images || [product.image, product.image, product.image, product.image];
+  const galleryImages = [product.image, ...((product.images || []).filter((img: string) => img !== product.image))].slice(0, 4);
 
   return (
     <motion.div 
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="space-y-12"
+      className="space-y-12 pt-8"
     >
       {/* Back Button */}
       <button 
@@ -74,8 +157,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onToggle
               referrerPolicy="no-referrer"
             />
           </div>
-          <div className="grid grid-cols-4 gap-4">
-            {galleryImages.slice(0, 4).map((img: string, i: number) => (
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3">
+            {galleryImages.map((img: string, i: number) => (
               <div 
                 key={i} 
                 onClick={() => setActiveImage(img)}
@@ -111,7 +194,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onToggle
               {product.name}
             </h2>
             <p className="text-slate-500 text-sm font-medium">
-              Modelo: <span className="text-slate-300">{model}</span> | SKU: <span className="text-slate-300">{sku}</span>
+              Marca: <span className="text-primary font-black uppercase tracking-widest">{product.brand || 'Premium'}</span> | Modelo: <span className="text-slate-300">{model}</span> | SKU: <span className="text-slate-300">{sku}</span>
             </p>
           </div>
 
@@ -159,21 +242,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onToggle
                 <Share2 className="w-6 h-6" />
               </button>
             </div>
-          </div>
-
-          {/* Key Specs Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            {specs.map((spec, i) => (
-              <div key={i} className="bg-[#151921] rounded-2xl p-4 border border-white/5 flex items-start gap-4">
-                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary shrink-0">
-                  <spec.icon className="w-5 h-5" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{spec.label}</p>
-                  <p className="text-xs font-bold text-white leading-tight">{spec.value}</p>
-                </div>
-              </div>
-            ))}
           </div>
 
           {/* AI Assistant Banner */}

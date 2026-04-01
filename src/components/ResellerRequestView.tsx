@@ -14,7 +14,8 @@ import {
   ShieldCheck,
   Zap,
   Crown,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from 'lucide-react';
 
 interface ResellerRequestViewProps {
@@ -29,12 +30,65 @@ const PLANS = [
 ];
 
 const CATEGORIES = [
-  { id: 'electronics', label: 'Electrónica de Consumo', icon: <Monitor className="w-4 h-4" />, count: 45 },
-  { id: 'components', label: 'Componentes PC', icon: <Cpu className="w-4 h-4" />, count: 120 },
-  { id: 'networking', label: 'Networking y Servidores', icon: <Server className="w-4 h-4" />, count: 35 },
-  { id: 'mobile', label: 'Dispositivos Móviles', icon: <Smartphone className="w-4 h-4" />, count: 60 },
-  { id: 'laptops', label: 'Laptops y Notebooks', icon: <Monitor className="w-4 h-4" />, count: 85 },
-  { id: 'peripherals', label: 'Periféricos Gaming', icon: <Cpu className="w-4 h-4" />, count: 150 },
+  {
+    id: 'components',
+    label: 'Componentes',
+    icon: <Cpu className="w-5 h-5" />,
+    subcategories: [
+      { id: 'cpu', label: 'Procesadores (CPUs)', count: 50 },
+      { id: 'gpu', label: 'Tarjetas de Video (GPUs)', count: 40 },
+      { id: 'mb', label: 'Placas Base', count: 60 },
+      { id: 'ram', label: 'Memoria RAM', count: 120 },
+      { id: 'storage', label: 'Almacenamiento', count: 90 },
+      { id: 'psu', label: 'Fuentes de Poder', count: 35 },
+      { id: 'case', label: 'Gabinetes', count: 45 },
+      { id: 'cooling', label: 'Refrigeración', count: 55 }
+    ]
+  },
+  {
+    id: 'laptops',
+    label: 'Laptops y Computadoras',
+    icon: <Monitor className="w-5 h-5" />,
+    subcategories: [
+      { id: 'lap-gaming', label: 'Laptops Gaming', count: 30 },
+      { id: 'lap-pro', label: 'Laptops Profesionales', count: 40 },
+      { id: 'lap-student', label: 'Laptops Estudiantiles', count: 50 },
+      { id: 'aio', label: 'All-in-One PCs', count: 15 }
+    ]
+  },
+  {
+    id: 'peripherals',
+    label: 'Periféricos',
+    icon: <Smartphone className="w-5 h-5" />,
+    subcategories: [
+      { id: 'keyboard', label: 'Teclados', count: 85 },
+      { id: 'mouse', label: 'Mouse', count: 110 },
+      { id: 'headset', label: 'Headsets / Audífonos', count: 70 },
+      { id: 'webcam', label: 'Webcams', count: 45 },
+      { id: 'mic', label: 'Micrófonos', count: 35 },
+      { id: 'mousepad', label: 'Alfombrillas', count: 90 },
+      { id: 'chair', label: 'Sillas gamer', count: 20 }
+    ]
+  },
+  {
+    id: 'monitors',
+    label: 'Monitores',
+    icon: <Monitor className="w-5 h-5" />,
+    subcategories: [
+      { id: 'monitor', label: 'Monitores', count: 65 }
+    ]
+  },
+  {
+    id: 'networking',
+    label: 'Networking',
+    icon: <Server className="w-5 h-5" />,
+    subcategories: [
+      { id: 'router', label: 'Routers', count: 40 },
+      { id: 'switch', label: 'Switches', count: 25 },
+      { id: 'net-adapter', label: 'Adaptadores de Red', count: 80 },
+      { id: 'ap', label: 'Access Points', count: 30 }
+    ]
+  }
 ];
 
 export default function ResellerRequestView({ onNavigate, onSubmitRequest }: ResellerRequestViewProps) {
@@ -113,6 +167,16 @@ export default function ResellerRequestView({ onNavigate, onSubmitRequest }: Res
           [label]: newQty
         }
       };
+    });
+  };
+
+  const clearCategory = (subcategories: { id: string, label: string, count: number }[]) => {
+    setFormData(prev => {
+      const newQuantities = { ...prev.categoryQuantities };
+      subcategories.forEach(sub => {
+        delete newQuantities[sub.label];
+      });
+      return { ...prev, categoryQuantities: newQuantities };
     });
   };
 
@@ -429,64 +493,85 @@ export default function ResellerRequestView({ onNavigate, onSubmitRequest }: Res
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {CATEGORIES.map((cat) => {
-            const qty = formData.categoryQuantities[cat.label] || 0;
-            const canAdd = !isOverLimit(1);
-
-            return (
-              <div 
-                key={cat.id} 
-                className={`flex flex-col p-6 rounded-2xl border-2 transition-all group ${
-                  qty > 0 
-                    ? 'bg-primary/10 border-primary' 
-                    : 'bg-black/20 border-white/5 hover:border-white/20'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                      qty > 0 ? 'bg-primary text-white' : 'bg-white/5 text-slate-500 group-hover:text-white'
-                    }`}>
-                      {cat.icon}
-                    </div>
-                    <div>
-                      <h4 className={`text-sm font-bold transition-colors ${qty > 0 ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
-                        {cat.label}
-                      </h4>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-                        Máx. {cat.count} disponibles
-                      </p>
-                    </div>
+        <div className="space-y-12">
+          {CATEGORIES.map((mainCat) => (
+            <div key={mainCat.id} className="space-y-6">
+              <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-slate-300 shadow-inner">
+                    {mainCat.icon}
                   </div>
-                  {qty > 0 && <CheckCircle2 className="w-5 h-5 text-primary" />}
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight">{mainCat.label}</h3>
                 </div>
-
-                <div className="flex items-center justify-between bg-black/40 rounded-xl p-2 border border-white/5">
-                  <button 
+                {mainCat.subcategories.some(sub => (formData.categoryQuantities[sub.label] || 0) > 0) && (
+                  <button
                     type="button"
-                    onClick={() => updateCategoryQuantity(cat.label, -1)}
-                    disabled={qty === 0}
-                    className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-white hover:bg-rose-500/20 hover:text-rose-500 transition-all disabled:opacity-20"
+                    onClick={() => clearCategory(mainCat.subcategories)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-widest"
                   >
-                    -
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Limpiar
                   </button>
-                  <div className="text-center">
-                    <p className="text-lg font-black text-white leading-none">{qty}</p>
-                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1">unidades</p>
-                  </div>
-                  <button 
-                    type="button"
-                    onClick={() => updateCategoryQuantity(cat.label, 1)}
-                    disabled={!canAdd || qty >= cat.count}
-                    className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-white hover:bg-primary/20 hover:text-primary transition-all disabled:opacity-20"
-                  >
-                    +
-                  </button>
-                </div>
+                )}
               </div>
-            );
-          })}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {mainCat.subcategories.map((subcat) => {
+                  const qty = formData.categoryQuantities[subcat.label] || 0;
+                  const canAdd = !isOverLimit(1);
+
+                  return (
+                    <div 
+                      key={subcat.id} 
+                      className={`flex flex-col p-5 rounded-2xl border-2 transition-all group ${
+                        qty > 0 
+                          ? 'bg-primary/10 border-primary' 
+                          : 'bg-black/20 border-white/5 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-2 h-2 rounded-full ${qty > 0 ? 'bg-primary' : 'bg-slate-700'}`} />
+                          <div>
+                            <h4 className={`text-xs font-bold transition-colors leading-tight line-clamp-2 ${qty > 0 ? 'text-white' : 'text-slate-400 group-hover:text-white'}`}>
+                              {subcat.label}
+                            </h4>
+                            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">
+                              Máx. {subcat.count}
+                            </p>
+                          </div>
+                        </div>
+                        {qty > 0 && <CheckCircle2 className="w-4 h-4 text-primary shrink-0 ml-2" />}
+                      </div>
+
+                      <div className="flex items-center justify-between bg-black/40 rounded-xl p-2 border border-white/5 mt-auto">
+                        <button 
+                          type="button"
+                          onClick={() => updateCategoryQuantity(subcat.label, -1)}
+                          disabled={qty === 0}
+                          className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white hover:bg-rose-500/20 hover:text-rose-500 transition-all disabled:opacity-20 text-lg font-medium"
+                        >
+                          -
+                        </button>
+                        <div className="text-center px-2">
+                          <p className="text-base font-black text-white leading-none">{qty}</p>
+                          <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1">unidades</p>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => updateCategoryQuantity(subcat.label, 1)}
+                          disabled={!canAdd || qty >= subcat.count}
+                          className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-white hover:bg-primary/20 hover:text-primary transition-all disabled:opacity-20 text-lg font-medium"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
 
         {(currentProductCount as number) >= selectedPlan.limit && selectedPlan.limit !== Infinity && (

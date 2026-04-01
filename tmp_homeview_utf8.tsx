@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { motion } from 'motion/react';
 import { Rocket, Cpu, Laptop, Mouse, Monitor, Router, Video, Headphones, ShoppingCart, ArrowRight, Sparkles, LayoutGrid } from 'lucide-react';
 
@@ -22,13 +22,13 @@ export default function HomeView({ onNavigate, onProductClick, onAddToCart }: Ho
         <div className="absolute inset-0 theme-gradient" />
         <div className="relative z-10 px-8 lg:px-16 max-w-2xl space-y-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 border border-primary/30 text-primary text-xs font-bold tracking-widest uppercase">
-            <Sparkles className="w-4 h-4" /> Tecnología AI Avanzada
+            <Sparkles className="w-4 h-4" /> Tecnolog├¡a AI Avanzada
           </div>
           <h2 className="text-5xl lg:text-7xl font-black text-[var(--text-color)] leading-tight tracking-tighter">
             Crea tu PC Ideal con <span className="text-primary italic block lg:inline">Inteligencia Artificial</span>
           </h2>
           <p className="text-[var(--text-color)] opacity-80 text-lg leading-relaxed">
-            Nuestro algoritmo analiza miles de componentes para garantizar la máxima compatibilidad y rendimiento según tu presupuesto.
+            Nuestro algoritmo analiza miles de componentes para garantizar la m├íxima compatibilidad y rendimiento seg├║n tu presupuesto.
           </p>
           <div className="flex flex-wrap gap-4">
             <button 
@@ -47,15 +47,17 @@ export default function HomeView({ onNavigate, onProductClick, onAddToCart }: Ho
         <div className="flex items-center justify-between">
           <h3 className="text-xl font-bold flex items-center gap-3">
             <span className="w-1.5 h-6 bg-primary rounded-full"></span>
-            Explora Categorías
+            Explora Categor├¡as
           </h3>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <CategoryCard icon={<LayoutGrid />} title="Componentes" onClick={() => onNavigate('catalog', undefined, 'gpu')} />
           <CategoryCard icon={<Laptop />} title="Laptops" onClick={() => onNavigate('catalog', undefined, 'laptop')} />
-          <CategoryCard icon={<Mouse />} title="Periféricos" onClick={() => onNavigate('catalog', undefined, 'peripherals')} />
+          <CategoryCard icon={<Mouse />} title="Perif├®ricos" onClick={() => onNavigate('catalog', undefined, 'peripherals')} />
           <CategoryCard icon={<Monitor />} title="Monitores" onClick={() => onNavigate('catalog', undefined, 'monitor')} />
           <CategoryCard icon={<Router />} title="Networking" onClick={() => onNavigate('catalog', undefined, 'networking')} />
+          <CategoryCard icon={<Video />} title="Streaming" onClick={() => onNavigate('catalog', undefined, 'streaming')} />
+          <CategoryCard icon={<Headphones />} title="Accesorios" onClick={() => onNavigate('catalog', undefined, 'accessories')} />
         </div>
       </section>
 
@@ -72,67 +74,73 @@ export default function HomeView({ onNavigate, onProductClick, onAddToCart }: Ho
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <ProductCard 
-            image="/images/products/laptop.png" 
+            image="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=800&h=600" 
             category="Laptops" 
-            title="Apple MacBook Pro 14 • M3 Max • 36GB RAM" 
+            title="Apple MacBook Pro 14 ÔÇó M3 Max ÔÇó 36GB RAM" 
             price="12,499" 
             badge="Premium"
             badgeColor="bg-amber-500"
             onAddToCart={() => onAddToCart?.({ 
               id: 803, 
               brand: "Apple",
-              name: "MacBook Pro 14 • M3 Max • 36GB RAM", 
+              name: "MacBook Pro 14 ÔÇó M3 Max ÔÇó 36GB RAM", 
               price: 12499, 
-              image: "/images/products/laptop.png",
+              image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=800&h=600",
               tags: ["M3 Max", "36GB RAM", "Liquid Retina XDR"] 
             })}
             onClick={() => onProductClick?.({ 
               id: 803, 
               brand: "Apple",
-              name: "MacBook Pro 14 • M3 Max • 36GB RAM", 
+              name: "MacBook Pro 14 ÔÇó M3 Max ÔÇó 36GB RAM", 
               price: 12499, 
-              image: "/images/products/laptop.png",
+              image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=800&h=600",
+              images: [
+                "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=800&h=600",
+                "https://picsum.photos/seed/mac1/800/600",
+                "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?auto=format&fit=crop&q=80&w=800&h=600",
+                "https://picsum.photos/seed/mac2/800/600"
+              ],
               tags: ["M3 Max", "36GB RAM", "Liquid Retina XDR"] 
             })}
           />
           <ProductCard 
-            image="/images/products/gpu.png" 
+            image="https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&q=80&w=400&h=400" 
             category="Tarjetas de Video" 
             title="NVIDIA GeForce RTX 4080 Founders Edition 16GB" 
             price="4,899" 
             oldPrice="5,200"
-            badge="Envío Gratis"
-            onAddToCart={() => onAddToCart?.({ id: 402, name: "NVIDIA GeForce RTX 4080 Founders Edition 16GB", price: 4899, image: "/images/products/gpu.png", tags: ["RTX 40 Series", "16GB VRAM"] })}
-            onClick={() => onProductClick?.({ id: 402, name: "NVIDIA GeForce RTX 4080 Founders Edition 16GB", price: 4899, image: "/images/products/gpu.png", tags: ["RTX 40 Series", "16GB VRAM"] })}
+            badge="Env├¡o Gratis"
+            onAddToCart={() => onAddToCart?.({ id: 402, name: "NVIDIA GeForce RTX 4080 Founders Edition 16GB", price: 4899, image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&q=80&w=400&h=400", tags: ["RTX 40 Series", "16GB VRAM"] })}
+            onClick={() => onProductClick?.({ id: 402, name: "NVIDIA GeForce RTX 4080 Founders Edition 16GB", price: 4899, image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&q=80&w=400&h=400", tags: ["RTX 40 Series", "16GB VRAM"] })}
           />
           <ProductCard 
-            image="/images/products/cpu.png" 
+            image="https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&q=80&w=400&h=400" 
             category="Procesadores" 
             title="AMD Ryzen 9 7950X - 16 Core 32 Thread 4.5GHz" 
             price="2,450" 
             badge="Nuevo"
             badgeColor="bg-emerald-500"
-            onAddToCart={() => onAddToCart?.({ id: 106, name: "AMD Ryzen 9 7950X - 16 Core 32 Thread 4.5GHz", price: 2450, image: "/images/products/cpu.png", tags: ["AM5", "16 Cores"] })}
-            onClick={() => onProductClick?.({ id: 106, name: "AMD Ryzen 9 7950X - 16 Core 32 Thread 4.5GHz", price: 2450, image: "/images/products/cpu.png", tags: ["AM5", "16 Cores"] })}
+            onAddToCart={() => onAddToCart?.({ id: 106, name: "AMD Ryzen 9 7950X - 16 Core 32 Thread 4.5GHz", price: 2450, image: "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&q=80&w=400&h=400", tags: ["AM5", "16 Cores"] })}
+            onClick={() => onProductClick?.({ id: 106, name: "AMD Ryzen 9 7950X - 16 Core 32 Thread 4.5GHz", price: 2450, image: "https://images.unsplash.com/photo-1591799264318-7e6ef8ddb7ea?auto=format&fit=crop&q=80&w=400&h=400", tags: ["AM5", "16 Cores"] })}
           />
           <ProductCard 
-            image="/images/products/monitor.png" 
+            image="https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&q=80&w=400&h=400" 
             category="Monitores" 
             title={'Samsung Odyssey G9 49" QLED Curved 240Hz'} 
             price="5,199" 
             oldPrice="6,200"
             badge="-15%"
             badgeColor="bg-red-500"
-            onAddToCart={() => onAddToCart?.({ id: 1001, name: 'Samsung Odyssey G9 49" QLED Curved 240Hz', price: 5199, image: "/images/products/monitor.png", tags: ["240Hz", "QLED"] })}
-            onClick={() => onProductClick?.({ id: 1001, name: 'Samsung Odyssey G9 49" QLED Curved 240Hz', price: 5199, image: "/images/products/monitor.png", tags: ["240Hz", "QLED"] })}
+            onAddToCart={() => onAddToCart?.({ id: 1001, name: 'Samsung Odyssey G9 49" QLED Curved 240Hz', price: 5199, image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&q=80&w=400&h=400", tags: ["240Hz", "QLED"] })}
+            onClick={() => onProductClick?.({ id: 1001, name: 'Samsung Odyssey G9 49" QLED Curved 240Hz', price: 5199, image: "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?auto=format&fit=crop&q=80&w=400&h=400", tags: ["240Hz", "QLED"] })}
           />
           <ProductCard 
-            image="/images/products/cpu.png" 
+            image="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=400&h=400" 
             category="Placas Madre" 
             title="ASUS ROG Strix Z790-E Gaming WiFi II DDR5" 
             price="1,850" 
-            onAddToCart={() => onAddToCart?.({ id: 201, name: "ASUS ROG Strix Z790-E Gaming WiFi II DDR5", price: 1850, image: "/images/products/cpu.png", tags: ["Z790", "DDR5"] })}
-            onClick={() => onProductClick?.({ id: 201, name: "ASUS ROG Strix Z790-E Gaming WiFi II DDR5", price: 1850, image: "/images/products/cpu.png", tags: ["Z790", "DDR5"] })}
+            onAddToCart={() => onAddToCart?.({ id: 201, name: "ASUS ROG Strix Z790-E Gaming WiFi II DDR5", price: 1850, image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=400&h=400", tags: ["Z790", "DDR5"] })}
+            onClick={() => onProductClick?.({ id: 201, name: "ASUS ROG Strix Z790-E Gaming WiFi II DDR5", price: 1850, image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=400&h=400", tags: ["Z790", "DDR5"] })}
           />
         </div>
       </section>

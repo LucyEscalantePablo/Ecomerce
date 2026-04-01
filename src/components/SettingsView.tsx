@@ -27,7 +27,7 @@ export default function SettingsView({ onNavigate }: SettingsViewProps) {
 
       <div className="bg-gradient-to-br from-blue-600/10 to-indigo-600/10 border border-blue-500/20 rounded-3xl p-8 mb-12 flex items-center gap-6">
         <div className="w-20 h-20 rounded-full overflow-hidden border-4 border-primary/30 shrink-0">
-          <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200&h=200" alt="Lisi" className="w-full h-full object-cover" />
+          <img src="/images/products/peripherals.png" alt="Lisi" className="w-full h-full object-cover" />
         </div>
         <div>
           <h3 className="text-xl font-bold text-white">¡Hola, soy Lisi!</h3>

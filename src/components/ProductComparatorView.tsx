@@ -1,94 +1,64 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Activity, Share2, Download, ShoppingCart, CheckCircle2, Lightbulb, ArrowLeft, BarChart3, Cpu, Zap, Plus, X, Search } from 'lucide-react';
+import { Activity, Share2, Download, ShoppingCart, CheckCircle2, Lightbulb, ArrowLeft, BarChart3, Plus, X, Search, Zap } from 'lucide-react';
+import { supabase } from '../lib/supabase';
+import { CATEGORIES_DATA } from '../data/adminConstants';
 
 interface Product {
-  id: number;
+  id: string | number;
   name: string;
-  price: string;
+  price: number;
   image: string;
   category: string;
-  specs: {
-    vram: string;
-    architecture: string;
-    tdp: string;
-    rayTracing: string;
-  };
-  performance: {
-    cyberpunk: number;
-    fortnite: number;
-  };
+  sub_category?: string;
+  specs: Record<string, any>;
   badge?: string;
 }
-
-const allAvailableProducts: Product[] = [
-  {
-    id: 1,
-    name: "NVIDIA RTX 4080 Super",
-    price: "4,599",
-    image: "https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&q=80&w=400&h=400",
-    category: "HIGH-END PERFORMANCE",
-    specs: { vram: "16GB GDDR6X", architecture: "Ada Lovelace", tdp: "320W", rayTracing: "80 (Gen 3)" },
-    performance: { cyberpunk: 78, fortnite: 115 }
-  },
-  {
-    id: 2,
-    name: "AMD Radeon RX 7900 XTX",
-    price: "4,299",
-    image: "https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&q=80&w=400&h=400",
-    category: "RDNA 3 FLAGSHIP",
-    badge: "MEJOR VALOR",
-    specs: { vram: "24GB GDDR6", architecture: "RDNA 3.0", tdp: "355W", rayTracing: "96 (Gen 2)" },
-    performance: { cyberpunk: 82, fortnite: 121 }
-  },
-  {
-    id: 3,
-    name: "NVIDIA RTX 4070 Ti Super",
-    price: "3,450",
-    image: "https://images.unsplash.com/photo-1555617766-c94804975da3?auto=format&fit=crop&q=80&w=400&h=400",
-    category: "EFFICIENT POWER",
-    specs: { vram: "16GB GDDR6X", architecture: "Ada Lovelace", tdp: "285W", rayTracing: "66 (Gen 3)" },
-    performance: { cyberpunk: 61, fortnite: 94 }
-  },
-  {
-    id: 4,
-    name: "NVIDIA RTX 4090",
-    price: "8,200",
-    image: "https://images.unsplash.com/photo-1660481434479-3bc6d8a3ef3b?auto=format&fit=crop&q=80&w=400&h=400",
-    category: "ULTIMATE PERFORMANCE",
-    specs: { vram: "24GB GDDR6X", architecture: "Ada Lovelace", tdp: "450W", rayTracing: "128 (Gen 3)" },
-    performance: { cyberpunk: 112, fortnite: 165 }
-  },
-  {
-    id: 5,
-    name: "AMD Radeon RX 7800 XT",
-    price: "2,150",
-    image: "https://images.unsplash.com/photo-1591489378430-ef2f4c626b35?auto=format&fit=crop&q=80&w=400&h=400",
-    category: "MID-RANGE KING",
-    specs: { vram: "16GB GDDR6", architecture: "RDNA 3.0", tdp: "263W", rayTracing: "60 (Gen 2)" },
-    performance: { cyberpunk: 48, fortnite: 82 }
-  },
-  {
-    id: 6,
-    name: "NVIDIA RTX 4060 Ti",
-    price: "1,750",
-    image: "https://images.unsplash.com/photo-1610051709121-184340077491?auto=format&fit=crop&q=80&w=400&h=400",
-    category: "ENTRY PERFORMANCE",
-    specs: { vram: "8GB GDDR6", architecture: "Ada Lovelace", tdp: "160W", rayTracing: "34 (Gen 3)" },
-    performance: { cyberpunk: 35, fortnite: 68 }
-  }
-];
 
 interface ProductComparatorViewProps {
   onNavigate: (view: any) => void;
 }
 
 export default function ProductComparatorView({ onNavigate }: ProductComparatorViewProps) {
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>(allAvailableProducts.slice(0, 3));
-  const [showSelector, setShowSelector] = useState<number | null>(null); // Index of slot being filled
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [showSelector, setShowSelector] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>(Object.keys(CATEGORIES_DATA)[0]);
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>(CATEGORIES_DATA[Object.keys(CATEGORIES_DATA)[0]][0]);
+  const [dbProducts, setDbProducts] = useState<Product[]>([]);
 
-  const removeProduct = (id: number) => {
+  // Fetch products based on category/subcategory
+  React.useEffect(() => {
+    const fetchProducts = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('category_key', selectedCategory)
+        .eq('sub_category', selectedSubCategory);
+      
+      if (data) {
+        setDbProducts(data.map(p => {
+          let specs = p.specs || {};
+          if (typeof specs === 'string') {
+            try { specs = JSON.parse(specs); } catch (e) { specs = {}; }
+          }
+          return {
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            image: p.image_url,
+            category: p.category_key,
+            sub_category: p.sub_category,
+            specs: specs,
+            badge: p.badge
+          };
+        }));
+      }
+    };
+    fetchProducts();
+  }, [selectedCategory, selectedSubCategory]);
+
+  const removeProduct = (id: string | number) => {
     setSelectedProducts(prev => prev.filter(p => p.id !== id));
   };
 
@@ -99,12 +69,13 @@ export default function ProductComparatorView({ onNavigate }: ProductComparatorV
     } else {
       newSelected.push(product);
     }
-    setSelectedProducts(newSelected);
+    // Limit to 3 items
+    setSelectedProducts(newSelected.slice(0, 3));
     setShowSelector(null);
     setSearchQuery('');
   };
 
-  const filteredAvailable = allAvailableProducts.filter(p => 
+  const filteredAvailable = dbProducts.filter(p => 
     !selectedProducts.find(sp => sp.id === p.id) &&
     p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -120,8 +91,8 @@ export default function ProductComparatorView({ onNavigate }: ProductComparatorV
           >
             <ArrowLeft className="w-4 h-4" /> Volver al Inicio
           </button>
-          <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Comparador Inteligente de GPUs</h1>
-          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">Selecciona hasta 3 productos para analizar su rendimiento y especificaciones.</p>
+          <h1 className="text-4xl font-black text-white uppercase tracking-tighter">Comparador Inteligente</h1>
+          <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">Selecciona hasta 3 productos de cualquier categoría para analizar sus especificaciones.</p>
         </div>
         <div className="flex items-center gap-3">
           <button className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all">
@@ -130,6 +101,43 @@ export default function ProductComparatorView({ onNavigate }: ProductComparatorV
           <button className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/10 transition-all">
             <Download className="w-4 h-4" /> PDF
           </button>
+        </div>
+      </div>
+
+      {/* Category Selection */}
+      <div className="space-y-6">
+        <div className="flex flex-wrap gap-2">
+          {Object.keys(CATEGORIES_DATA).map((cat) => (
+            <button
+              key={cat}
+              onClick={() => {
+                setSelectedCategory(cat);
+                setSelectedSubCategory(CATEGORIES_DATA[cat][0]);
+              }}
+              className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                selectedCategory === cat 
+                  ? 'bg-primary text-white shadow-lg shadow-primary/30' 
+                  : 'bg-white/5 text-slate-500 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2 pb-4 border-b border-white/5">
+          {CATEGORIES_DATA[selectedCategory].map((sub) => (
+            <button
+              key={sub}
+              onClick={() => setSelectedSubCategory(sub)}
+              className={`px-4 py-2 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
+                selectedSubCategory === sub 
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                  : 'bg-white/5 text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              {sub}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -205,7 +213,7 @@ export default function ProductComparatorView({ onNavigate }: ProductComparatorV
               className="relative w-full max-w-2xl bg-[#0B0E14] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
             >
               <div className="p-6 border-b border-white/5 flex items-center justify-between">
-                <h3 className="text-xl font-black text-white uppercase tracking-tight">Seleccionar GPU</h3>
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">Seleccionar Producto ({selectedSubCategory})</h3>
                 <button onClick={() => setShowSelector(null)} className="p-2 text-slate-500 hover:text-white transition-colors">
                   <X className="w-6 h-6" />
                 </button>
@@ -258,65 +266,43 @@ export default function ProductComparatorView({ onNavigate }: ProductComparatorV
 
       {selectedProducts.length > 0 && (
         <>
-          {/* Technical Specs Table */}
+          {/* Dynamic Technical Specs Table */}
           <div className="space-y-6">
             <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-              <BarChart3 className="w-6 h-6 text-primary" /> Especificaciones Técnicas
+              <BarChart3 className="w-6 h-6 text-primary" /> Especificaciones Comparadas
             </h3>
             <div className="bg-[#151921] border border-white/5 rounded-3xl overflow-x-auto no-scrollbar">
               <table className="w-full text-left border-collapse min-w-[600px]">
                 <thead>
                   <tr className="text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-white/5">
-                    <th className="px-8 py-6">Característica</th>
+                    <th className="px-8 py-6 min-w-[200px]">Especificación</th>
                     {selectedProducts.map(p => <th key={p.id} className="px-8 py-6">{p.name}</th>)}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   <tr className="group hover:bg-white/2 transition-colors">
-                    <td className="px-8 py-6 text-xs font-black text-slate-500 uppercase tracking-widest">VRAM</td>
+                    <td className="px-8 py-6 text-xs font-black text-slate-500 uppercase tracking-widest">Precio</td>
                     {selectedProducts.map(p => (
-                      <td key={p.id} className={`px-8 py-6 text-sm font-bold ${p.specs.vram.includes('24GB') ? 'text-primary' : 'text-white'}`}>
-                        {p.specs.vram}
+                      <td key={p.id} className="px-8 py-6 text-sm font-black text-primary">
+                        S/ {new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(p.price)}
                       </td>
                     ))}
                   </tr>
-                  <tr className="group hover:bg-white/2 transition-colors">
-                    <td className="px-8 py-6 text-xs font-black text-slate-500 uppercase tracking-widest">Arquitectura</td>
-                    {selectedProducts.map(p => (
-                      <td key={p.id} className="px-8 py-6 text-sm font-bold text-white">
-                        {p.specs.architecture}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className="group hover:bg-white/2 transition-colors">
-                    <td className="px-8 py-6 text-xs font-black text-slate-500 uppercase tracking-widest">TDP (W)</td>
-                    {selectedProducts.map(p => (
-                      <td key={p.id} className={`px-8 py-6 text-sm font-bold ${parseInt(p.specs.tdp) < 300 ? 'text-emerald-500' : 'text-white'}`}>
-                        {p.specs.tdp}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className="group hover:bg-white/2 transition-colors">
-                    <td className="px-8 py-6 text-xs font-black text-slate-500 uppercase tracking-widest">Ray Tracing Cores</td>
-                    {selectedProducts.map(p => (
-                      <td key={p.id} className="px-8 py-6 text-sm font-bold text-white">
-                        {p.specs.rayTracing}
-                      </td>
-                    ))}
-                  </tr>
+                  {(() => {
+                    const allKeys = Array.from(new Set(selectedProducts.flatMap(p => Object.keys(p.specs || {}))));
+                    return (allKeys as string[]).map(key => (
+                      <tr key={key} className="group hover:bg-white/2 transition-colors">
+                        <td className="px-8 py-6 text-xs font-black text-slate-500 uppercase tracking-widest">{key}</td>
+                        {selectedProducts.map(p => (
+                          <td key={p.id} className="px-8 py-6 text-sm font-bold text-white">
+                            {p.specs?.[key] || '---'}
+                          </td>
+                        ))}
+                      </tr>
+                    ));
+                  })()}
                 </tbody>
               </table>
-            </div>
-          </div>
-
-          {/* Gaming Performance */}
-          <div className="space-y-6">
-            <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-              <Zap className="w-6 h-6 text-primary" /> Rendimiento en Juegos (FPS)
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <PerformanceCard title="Cyberpunk 2077" subtitle="4K Ultra / RT Off" products={selectedProducts} gameKey="cyberpunk" />
-              <PerformanceCard title="Fortnite" subtitle="4K Epic / Nanite On" products={selectedProducts} gameKey="fortnite" />
             </div>
           </div>
 
@@ -341,10 +327,10 @@ export default function ProductComparatorView({ onNavigate }: ProductComparatorV
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4" /> Líder en Rendimiento
+                      <CheckCircle2 className="w-4 h-4" /> Líder en Valor
                     </p>
                     <p className="text-[10px] font-bold text-slate-400">
-                      {selectedProducts.sort((a, b) => b.performance.cyberpunk - a.performance.cyberpunk)[0].name} domina en potencia bruta.
+                      {selectedProducts.sort((a, b) => a.price - b.price)[0].name} ofrece la entrada más accesible.
                     </p>
                   </div>
                   <div className="space-y-3">
@@ -352,7 +338,7 @@ export default function ProductComparatorView({ onNavigate }: ProductComparatorV
                       <Lightbulb className="w-4 h-4" /> Recomendación IA
                     </p>
                     <p className="text-[10px] font-bold text-slate-400 leading-relaxed">
-                      Para un equilibrio perfecto, sugerimos el modelo con mejor eficiencia energética y soporte de drivers a largo plazo.
+                      Para un equilibrio perfecto entre costo y especificaciones, nuestro análisis sugiere el modelo con mayor densidad de características por sol invertido.
                     </p>
                   </div>
                 </div>
@@ -364,38 +350,6 @@ export default function ProductComparatorView({ onNavigate }: ProductComparatorV
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-function PerformanceCard({ title, subtitle, products, gameKey }: { title: string, subtitle: string, products: Product[], gameKey: 'cyberpunk' | 'fortnite' }) {
-  const maxFps = Math.max(...products.map(p => p.performance[gameKey]), 1);
-
-  return (
-    <div className="bg-[#151921] border border-white/5 rounded-3xl p-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h4 className="text-lg font-black text-white uppercase tracking-tight">{title}</h4>
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{subtitle}</p>
-        </div>
-      </div>
-      <div className="space-y-6">
-        {products.map((product) => (
-          <div key={product.id} className="space-y-2">
-            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-              <span className="text-slate-400">{product.name}</span>
-              <span className="text-white">{product.performance[gameKey]} FPS</span>
-            </div>
-            <div className="h-2 bg-black/40 rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${(product.performance[gameKey] / maxFps) * 100}%` }}
-                className={`h-full rounded-full ${product.performance[gameKey] === maxFps ? 'bg-primary' : 'bg-slate-700'}`}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
